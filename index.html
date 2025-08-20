@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Your Burger</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Our Menu</h1>
+        <div id="menu-container"></div>
+        <h2>Your Order</h2>
+        <ul id="cart-items"></ul>
+        <p>Total: RM<span id="cart-total">0.00</span></p>
+
+        <!-- START: Name Input -->
+        <div class="customer-name-section">
+            <label for="customer-name">Your Name:</label>
+            <input type="text" id="customer-name" placeholder="Enter your name here">
+        </div>
+        <!-- END: Name Input -->
+
+        <!-- START: EDITED PART - Added Remarks Box -->
+        <div class="remarks-section">
+            <label for="order-remarks">Remarks (e.g., no chili, extra mayo):</label>
+            <textarea id="order-remarks" rows="3" placeholder="Type any special requests here"></textarea>
+        </div>
+        <!-- END: EDITED PART -->
+
+        <button id="submit-order">Place Order</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
