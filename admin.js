@@ -1,5 +1,7 @@
+// Add this variable at the very top to track order count for sound notifications
+let previousOrderCount = 0;
+
 // --- Firebase Configuration ---
-// PASTE THE SAME FIREBASE CONFIGURATION FROM YOUR APP.JS FILE HERE!
 const firebaseConfig = {
   apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ",
   authDomain: "counting-pos-food-system.firebaseapp.com",
@@ -23,32 +25,41 @@ const resetSalesBtn = document.getElementById('reset-sales-btn');
 // --- Functions ---
 
 /**
- * FINAL VERSION: This function now displays remarks, checks order status,
- * adds a "Mark as Complete" button, and applies a different style to completed orders.
+ * UPDATED: This function now plays a sound notification for new orders
+ * and uses the new "card" layout.
  */
 function displayOrders() {
     const ordersRef = database.ref('orders').orderByChild('timestamp').limitToLast(20);
 
     ordersRef.on('value', (snapshot) => {
-        ordersContainer.innerHTML = '';
         const ordersData = snapshot.val();
         
         if (!ordersData) {
             ordersContainer.innerHTML = '<p>No orders yet.</p>';
+            previousOrderCount = 0; // Reset counter
             return;
         }
 
+        // --- NEW SOUND LOGIC ---
+        const newOrderCount = Object.keys(ordersData).length;
+        if (newOrderCount > previousOrderCount && previousOrderCount !== 0) {
+            document.getElementById('notification-sound').play().catch(e => console.error("Sound play failed", e));
+        }
+        previousOrderCount = newOrderCount;
+        // --- END SOUND LOGIC ---
+
+        ordersContainer.innerHTML = '';
         const orderKeys = Object.keys(ordersData).reverse();
 
         for (const key of orderKeys) {
             const order = ordersData[key];
-            const orderDiv = document.createElement('div');
-            orderDiv.classList.add('menu-item');
-
-            if (order.status === 'completed') {
-                orderDiv.classList.add('order-completed');
-            }
+            const orderCard = document.createElement('div');
+            orderCard.classList.add('order-card');
             
+            if (order.status === 'completed') {
+                orderCard.classList.add('completed');
+            }
+
             let itemsHtml = '<ul>';
             for (const itemKey in order.items) {
                 const item = order.items[itemKey];
@@ -58,51 +69,56 @@ function displayOrders() {
 
             let remarksHtml = '';
             if (order.remarks && order.remarks.trim() !== '') {
-                remarksHtml = `<div class="order-remarks"><b>Remarks:</b> ${order.remarks}</div>`;
+                remarksHtml = `<div class="order-remarks">${order.remarks}</div>`;
             }
 
-            orderDiv.innerHTML = `
-                <div>
-                    <h3>Order for ${order.customerName} - ${new Date(order.timestamp).toLocaleTimeString()}</h3>
+            orderCard.innerHTML = `
+                <div class="order-header ${order.status || 'pending'}">
+                    <h3>${order.customerName} - ${new Date(order.timestamp).toLocaleTimeString()}</h3>
+                </div>
+                <div class="order-body">
                     ${itemsHtml}
                     ${remarksHtml}
-                    <p><b>Total: RM${order.total.toFixed(2)}</b></p>
+                </div>
+                <div class="order-footer">
+                    <span class="total">Total: RM${order.total.toFixed(2)}</span>
+                    ${order.status !== 'completed' ? `<button class="mark-complete-btn" data-order-key="${key}">Done</button>` : ''}
                 </div>
             `;
-            
-            if (order.status !== 'completed') {
-                const completeButton = document.createElement('button');
-                completeButton.textContent = 'Mark as Complete';
-                completeButton.classList.add('mark-complete-btn');
-                completeButton.dataset.orderKey = key; // Attach order key to the button
-                orderDiv.appendChild(completeButton);
-            }
-            
-            ordersContainer.appendChild(orderDiv);
+            ordersContainer.appendChild(orderCard);
         }
     });
 }
-
-// Displays sales counts (this function is already correct).
-function displaySalesCount() {
-    const menuRef = database.ref('menuItems');
-    menuRef.on('value', (snapshot) => {
-        salesContainer.innerHTML = '';
-        const salesData = snapshot.val();
-        for (const key in salesData) {
-            const item = salesData[key];
-            const p = document.createElement('p');
-            p.textContent = `${item.name}: ${item.soldToday || 0} sold`;
-            salesContainer.appendChild(p);
-        }
-    });
-}
-
 
 /**
- * NEW: This listener watches for clicks on any "Mark as Complete" button and
- * updates the correct order's status in Firebase.
+ * UPDATED: This function now correctly reads from the "products" and "variants" structure.
  */
+function displaySalesCount() {
+    const productsRef = database.ref('products');
+    productsRef.on('value', (snapshot) => {
+        salesContainer.innerHTML = '';
+        const productsData = snapshot.val();
+        for (const productKey in productsData) {
+            const product = productsData[productKey];
+            if (product.variants) {
+                const h4 = document.createElement('h4');
+                h4.textContent = product.name;
+                salesContainer.appendChild(h4);
+                
+                for (const variantKey in product.variants) {
+                    const variant = product.variants[variantKey];
+                    const p = document.createElement('p');
+                    let variantName = `${variant.type || ''} ${variant.style || ''}`.trim() || variant.name;
+                    p.textContent = `${variantName}: ${variant.soldToday || 0} sold`;
+                    p.style.marginLeft = '15px';
+                    salesContainer.appendChild(p);
+                }
+            }
+        }
+    });
+}
+
+// Click listener for "Mark as Complete" buttons (this logic is correct).
 ordersContainer.addEventListener('click', (e) => {
     if (e.target.classList.contains('mark-complete-btn')) {
         const orderKey = e.target.dataset.orderKey;
@@ -115,18 +131,22 @@ ordersContainer.addEventListener('click', (e) => {
 });
 
 
-// Resets all sales counts to 0 (this function is already correct).
+/**
+ * UPDATED: This function now correctly resets sales in the "products" and "variants" structure.
+ */
 resetSalesBtn.addEventListener('click', () => {
     if (confirm("Are you sure you want to reset all daily sales counts to 0? This cannot be undone.")) {
-        const menuRef = database.ref('menuItems');
-        menuRef.once('value', (snapshot) => {
+        const productsRef = database.ref('products');
+        productsRef.once('value', (snapshot) => {
             const updates = {};
-            snapshot.forEach((childSnapshot) => {
-                updates[childSnapshot.key + '/soldToday'] = 0;
+            snapshot.forEach((productSnapshot) => {
+                productSnapshot.child('variants').forEach((variantSnapshot) => {
+                    updates[`${productSnapshot.key}/variants/${variantSnapshot.key}/soldToday`] = 0;
+                });
             });
-            menuRef.update(updates)
+            productsRef.update(updates)
                 .then(() => {
-                    alert("Daily sales counts have been successfully reset to 0.");
+                    alert("Daily sales counts have been successfully reset.");
                 })
                 .catch((error) => {
                     console.error("Error resetting sales counts: ", error);
