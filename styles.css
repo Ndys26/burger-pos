@@ -1,7 +1,7 @@
 /* ---- GLOBAL STYLES ---- */
 :root {
     --primary-color: #ff8c00; --pending-color: #007bff; --completed-color: #6c757d;
-    --preparing-color: #ffc107; --ready-color: #17a2b8; /* ADDED new color variables */
+    --preparing-color: #ffc107; --ready-color: #17a2b8;
     --reset-color: #d9534f; --font-size-base: 18px; --font-size-large: 1.3rem; --font-size-xl: 1.7rem;
 }
 body {
@@ -18,29 +18,20 @@ h2 { text-align: center; }
 /* ---- ADMIN DASHBOARD STYLES (Kitchen View) ---- */
 #orders-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
 .order-card { background: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; }
-
-/* --- THIS IS THE FIRST FIX: Add specific colors for each status header --- */
 .order-header { padding: 15px; border-radius: 8px 8px 0 0; color: white; font-weight: bold; }
 .order-header.pending { background-color: var(--pending-color); }
-.order-header.preparing { background-color: var(--preparing-color); color: #212529; } /* Dark text for light background */
+.order-header.preparing { background-color: var(--preparing-color); color: #212529; }
 .order-header.ready { background-color: var(--ready-color); }
 .order-header.completed { background-color: var(--completed-color); }
-
 .order-header h3 { margin: 0; font-size: var(--font-size-large); }
 .order-body { padding: 15px; flex-grow: 1; }
 .order-body ul { list-style-type: none; padding: 0; margin: 0 0 15px 0; }
 .order-body li { font-size: var(--font-size-xl); font-weight: bold; padding: 8px 0; border-bottom: 1px solid #eee; }
-.order-body li:last-child { border-bottom: none; }
 .order-remarks { background-color: #fffbe6; border: 1px solid #ffeeba; padding: 12px; margin-top: 15px; border-radius: 4px; color: #856404; font-size: var(--font-size-large); font-style: italic; }
 .order-footer { padding: 15px; background-color: #f9f9f9; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 8px 8px; }
 .order-footer .total { font-weight: bold; font-size: 1.4rem; }
 .mark-complete-btn { background-color: #28a745; color: white; border: none; padding: 12px 25px; font-size: 1.1rem; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
-.mark-complete-btn:hover { background-color: #218838; }
 .order-card.completed { opacity: 0.6; }
-
-/* --- Sales Count / Stock Management --- */
-#sales-container { column-count: 4; column-gap: 30px; padding: 15px; }
-#sales-container h4 { font-size: 1.4rem; margin-top: 25px; break-before: column; }
 .stock-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
 .stock-name { font-size: 1.2rem; }
 .toggle-switch { position: relative; display: inline-block; width: 60px; height: 34px; }
@@ -48,7 +39,6 @@ h2 { text-align: center; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
 .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
 input:checked + .slider { background-color: #28a745; }
-input:focus + .slider { box-shadow: 0 0 1px #28a745; }
 input:checked + .slider:before { transform: translateX(26px); }
 
 /* --- CUSTOMER ORDERING PAGE STYLES ---- */
@@ -59,33 +49,28 @@ input:checked + .slider:before { transform: translateX(26px); }
 .disabled-option { color: #aaa; text-decoration: line-through; cursor: not-allowed; }
 .product-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
 .price-display { font-size: 1.2em; font-weight: bold; color: #333; }
+.add-to-cart-btn { padding: 12px 20px; font-size: 1.1em; font-weight: bold; background-color: var(--primary-color); border: none; color: white; border-radius: 5px; cursor: pointer; }
+#submit-order { width: 100%; padding: 20px; font-size: 1.5em; font-weight: bold; background-color: #28a745; border: none; color: white; border-radius: 8px; cursor: pointer; }
 .add-to-cart-btn:disabled { background-color: #ccc; cursor: not-allowed; }
 .cart-item { display: flex; justify-content: space-between; align-items: center; background: #eee; padding: 10px; margin-bottom: 5px; border-radius: 4px; font-size: 1.1rem; }
-.delete-cart-item-btn { background-color: #ff4d4d; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; line-height: 28px; text-align: center; cursor: pointer; font-size: 14px; font-weight: bold; padding: 0; flex-shrink: 0; margin-left: 10px; }
-.delete-cart-item-btn:hover { background-color: #e60000; }
+.cart-item-name { flex-grow: 1; }
+.cart-item-controls { display: flex; align-items: center; margin-left: 10px; }
+.quantity-btn { background-color: var(--primary-color); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+.quantity-display { font-size: 1.2rem; font-weight: bold; min-width: 20px; text-align: center; margin: 0 10px; }
 .customer-name-section, .remarks-section { margin-top: 20px; }
 #customer-name, #order-remarks { width: 100%; padding: 12px; font-size: 1.1rem; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
 
-/* --- Order Success and Status Page --- */
-.order-success { text-align: center; padding: 40px 20px; }
+/* --- Status, History, Reset and Other Buttons --- */
 .status-link { display: inline-block; margin-top: 20px; padding: 15px 30px; background-color: var(--primary-color); color: white; text-decoration: none; font-weight: bold; font-size: 1.2rem; border-radius: 50px; transition: background-color 0.3s; }
 .status-card { text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 12px; }
-.status-card p { font-size: 1.3rem; }
 #order-status { font-size: 2.5rem; font-weight: bold; padding: 10px; border-radius: 8px; color: white; margin: 10px 0 20px 0; }
 .status-pending { background-color: var(--pending-color); }
 .status-preparing { background-color: var(--preparing-color); color: #333; }
 .status-ready { background-color: var(--ready-color); }
-#order-status.status-completed { background-color: var(--completed-color); color: white; } /* THIS IS THE SECOND FIX */
-#order-items-display ul { list-style: none; padding: 0; font-size: 1.2rem; }
-
-/* --- Admin Status Buttons --- */
+#order-status.status-completed { background-color: var(--completed-color); color: white; }
 .status-btn { border: none; padding: 12px 18px; font-size: 1rem; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; color: white; }
 .preparing-btn { background-color: var(--preparing-color); color: #333; }
-.preparing-btn:hover { background-color: #e0a800; }
 .ready-btn { background-color: var(--ready-color); }
-.ready-btn:hover { background-color: #138496; }
-
-/* --- Other Buttons (History, Reset, Order Again) --- */
 .history-button { display: block; width: 100%; padding: 15px; font-size: 1.1em; font-weight: bold; color: var(--pending-color); background-color: #f0f8ff; border: 2px solid var(--pending-color); border-radius: 8px; cursor: pointer; margin-bottom: 20px; transition: background-color 0.3s, color 0.3s; }
 .reset-button { display: block; width: 50%; max-width: 400px; margin: 40px auto 20px auto; padding: 18px 25px; font-size: 1.2em; font-weight: bold; color: white; background-image: linear-gradient(to right, #d32f2f, #c62828); border: none; border-radius: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .success-buttons { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; align-items: center; }
@@ -96,3 +81,22 @@ input:checked + .slider:before { transform: translateX(26px); }
 #history-orders-container { list-style: none; padding: 0; }
 .history-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #ddd; font-size: 1.1rem; }
 .history-item.completed { color: #888; text-decoration: line-through; }
+
+
+/* --- FINAL STYLE TO CENTER SUCCESS MESSAGE --- */
+body.success-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 0;
+    margin: 0;
+}
+
+body.success-page .container {
+    max-width: 500px;
+    max-height: 100vh;
+}
+.order-success { text-align: center; padding: 40px 20px; }
+.order-success h1 { color: #28a745; }
+/* --- END OF FINAL STYLE --- */

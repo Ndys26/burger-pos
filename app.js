@@ -10,9 +10,10 @@ const cartTotal = document.getElementById('cart-total');
 const submitOrderBtn = document.getElementById('submit-order');
 let cart = {};
 
-// Helper functions (Final and correct)
+// --- Helper Functions for Acronyms ---
 const getProductShortName = (name) => {
-    if (name.includes('Ramly')) return 'Ramly'; if (name.includes('Benjo')) return 'Benjo'; if (name.includes('Oblong')) return 'Oblong'; if (name.includes('Maggi')) return 'Maggi'; return name;
+    if (name.includes('Ramly')) return 'Ramly'; if (name.includes('Benjo')) return 'Benjo';
+    if (name.includes('Oblong')) return 'Oblong'; if (name.includes('Maggi')) return 'Maggi'; return name;
 };
 const getAcronymForType = (type) => {
     if (!type) return '';
@@ -25,89 +26,64 @@ const getAcronymForStyle = (style) => {
     return map[style] || '';
 };
 const getAcronymForOption = (optionName) => {
-    if (optionName.includes('Cheese')) return 'C'; if (optionName.includes('Telur')) return 'T'; if (optionName.includes('Maggi')) return 'M'; if (optionName.includes('Daging')) return 'D+'; return '';
+    if (optionName.includes('Cheese')) return 'C'; if (optionName.includes('Telur')) return 'T';
+    if (optionName.includes('Maggi')) return 'M'; if (optionName.includes('Daging')) return 'D+'; return '';
 };
 
-// --- THIS IS THE FINAL, BUG-FIXED FUNCTION ---
+// --- Main Menu and Pricing Logic ---
 function displayMenu() {
     const productsRef = database.ref('products');
     productsRef.on('value', (snapshot) => {
         const productsData = snapshot.val();
         menuContainer.innerHTML = '';
-        if (!productsData) {
-            menuContainer.innerHTML = "<p>Menu is currently unavailable.</p>";
-            return;
-        }
-
+        if (!productsData) { menuContainer.innerHTML = "<p>Menu is currently unavailable.</p>"; return; }
         const productsArray = Object.keys(productsData).map(key => ({ key: key, ...productsData[key] }));
         productsArray.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
-
         productsArray.forEach(product => {
             const productKey = product.key;
-            const productCard = document.createElement('div');
-            productCard.classList.add('product-card');
-            productCard.id = productKey;
-
+            const productCard = document.createElement('div'); productCard.classList.add('product-card'); productCard.id = productKey;
             const types = [...new Set(Object.values(product.variants).map(v => v.type))].filter(Boolean);
             const styles = [...new Set(Object.values(product.variants).map(v => v.style))].filter(Boolean);
-            
-            // This is the fully corrected logic for both types and styles
-            let typesHtml = types.length > 0 ? `<div class="choice-group"><h4>Pilih Daging:</h4>${types.map(type => {
-                const isAnyVariantAvailable = Object.values(product.variants).some(v => v.type === type && v.isAvailable);
-                return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_type" value="${type}" ${isAnyVariantAvailable ? '' : 'disabled'}>${type}</label>`;
-            }).join('')}</div>` : '';
-            
-            let stylesHtml = styles.length > 0 ? `<div class="choice-group"><h4>Pilih Jenis:</h4>${styles.map(style => {
-                 const isAnyVariantAvailable = Object.values(product.variants).some(v => v.style === style && v.isAvailable);
-                 return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_style" value="${style}" ${isAnyVariantAvailable ? '' : 'disabled'}>${style}</label>`;
-            }).join('')}</div>` : '';
-            
+            let typesHtml = types.length > 0 ? `<div class="choice-group"><h4>Pilih Daging:</h4>${types.map(type => { const isAnyVariantAvailable = Object.values(product.variants).some(v => v.type === type && v.isAvailable); return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_type" value="${type}" ${isAnyVariantAvailable ? '' : 'disabled'}>${type}</label>`; }).join('')}</div>` : '';
+            let stylesHtml = styles.length > 0 ? `<div class="choice-group"><h4>Pilih Jenis:</h4>${styles.map(style => { const isAnyVariantAvailable = Object.values(product.variants).some(v => v.style === style && v.isAvailable); return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_style" value="${style}" ${isAnyVariantAvailable ? '' : 'disabled'}>${style}</label>`; }).join('')}</div>` : '';
             let optionsHtml = product.options ? `<div class="choice-group"><h4>Tambah:</h4>${product.options.map(opt => `<label><input type="checkbox" class="option-checkbox" data-price="${opt.price}" data-name="${opt.name}">${opt.name} (+RM${opt.price.toFixed(2)})</label>`).join('')}</div>` : '';
             productCard.innerHTML = `<h2>${product.name}</h2>${typesHtml}${stylesHtml}${optionsHtml}<div class="product-footer"><span class="price-display">Pilih untuk lihat harga</span><button class="add-to-cart-btn" disabled>Add</button></div>`;
             menuContainer.appendChild(productCard);
         });
     });
 }
-
 function updatePrice(cardElement) {
     const productKey = cardElement.id;
     const productsRef = database.ref('products/' + productKey);
     productsRef.once('value', (snapshot) => {
-        const product = snapshot.val();
-        if (!product) return;
+        const product = snapshot.val(); if (!product) return;
         const selectedType = cardElement.querySelector(`input[name="${productKey}_type"]:checked`)?.value;
         const selectedStyle = cardElement.querySelector(`input[name="${productKey}_style"]:checked`)?.value;
         const addButton = cardElement.querySelector('.add-to-cart-btn');
         const priceDisplay = cardElement.querySelector('.price-display');
         const hasTypes = !!Object.values(product.variants).find(v => v.type);
         const hasStyles = !!Object.values(product.variants).find(v => v.style);
-        let variantFound = null;
-        let isSelectionComplete = (!hasTypes || selectedType) && (!hasStyles || selectedStyle);
-
+        let variantFound = null; let isSelectionComplete = (!hasTypes || selectedType) && (!hasStyles || selectedStyle);
         for (const key in product.variants) {
             const variant = product.variants[key];
             const typeMatch = !hasTypes || variant.type === selectedType;
             const styleMatch = !hasStyles || variant.style === selectedStyle;
             if (typeMatch && styleMatch) { variantFound = variant; break; }
         }
-        
         if (variantFound && variantFound.isAvailable && isSelectionComplete) {
             let currentPrice = variantFound.price;
             cardElement.querySelectorAll('.option-checkbox:checked').forEach(box => { currentPrice += parseFloat(box.dataset.price); });
             priceDisplay.textContent = `RM${currentPrice.toFixed(2)}`;
             addButton.disabled = false;
         } else {
-            if (variantFound && !variantFound.isAvailable) {
-                priceDisplay.textContent = 'Out of Stock';
-            } else {
-                priceDisplay.textContent = 'Pilih untuk lihat harga';
-            }
+            if (variantFound && !variantFound.isAvailable) { priceDisplay.textContent = 'Out of Stock'; }
+            else { priceDisplay.textContent = 'Pilih untuk lihat harga'; }
             addButton.disabled = true;
         }
     });
 }
 
-// The rest of the file is correct and does not need any changes.
+// --- Event Listeners ---
 menuContainer.addEventListener('change', (e) => {
     if (e.target.type === 'radio' || e.target.type === 'checkbox') {
         const card = e.target.closest('.product-card'); if (card) updatePrice(card);
@@ -154,18 +130,21 @@ function updateCart() {
     for (const key in cart) {
         const item = cart[key];
         const li = document.createElement('li'); li.classList.add('cart-item');
-        const itemText = document.createElement('span'); itemText.textContent = `${item.name} x${item.quantity} - RM${(item.price * item.quantity).toFixed(2)}`;
-        const deleteBtn = document.createElement('button'); deleteBtn.textContent = '✖';
-        deleteBtn.classList.add('delete-cart-item-btn'); deleteBtn.dataset.cartKey = key;
-        li.appendChild(itemText); li.appendChild(deleteBtn); cartItems.appendChild(li);
-        total += item.price * item.quantity;
+        li.innerHTML = `<span class="cart-item-name">${item.name} - RM${item.price.toFixed(2)}</span><div class="cart-item-controls"><button class="quantity-btn decrease-btn" data-cart-key="${key}">-</button><span class="quantity-display">${item.quantity}</span><button class="quantity-btn increase-btn" data-cart-key="${key}">+</button></div>`;
+        cartItems.appendChild(li); total += item.price * item.quantity;
     }
     cartTotal.textContent = total.toFixed(2);
 }
 cartItems.addEventListener('click', (e) => {
-    if (e.target.classList.contains('delete-cart-item-btn')) {
-        const cartKeyToDelete = e.target.dataset.cartKey;
-        if (cart[cartKeyToDelete]) { delete cart[cartKeyToDelete]; updateCart(); }
+    const target = e.target;
+    const cartKey = target.dataset.cartKey;
+    if (target.classList.contains('decrease-btn')) {
+        if (cart[cartKey] && cart[cartKey].quantity > 1) { cart[cartKey].quantity--; }
+        else if (cart[cartKey]) { delete cart[cartKey]; }
+        updateCart();
+    }
+    if (target.classList.contains('increase-btn')) {
+        if (cart[cartKey]) { cart[cartKey].quantity++; updateCart(); }
     }
 });
 submitOrderBtn.addEventListener('click', () => {
@@ -173,7 +152,6 @@ submitOrderBtn.addEventListener('click', () => {
     const customerRemarks = document.getElementById('order-remarks').value;
     if (Object.keys(cart).length === 0) { alert("Your cart is empty!"); return; }
     if (customerName.trim() === '') { alert("Please enter your name!"); return; }
-
     const newOrderRef = database.ref('orders').push();
     newOrderRef.set({
         customerName, remarks: customerRemarks, items: cart,
@@ -186,6 +164,9 @@ submitOrderBtn.addEventListener('click', () => {
     }
     const orderId = newOrderRef.key;
     const statusUrl = `status.html?id=${orderId}`;
+    
+    // --- THIS IS THE ONLY UPDATED PART ---
+    document.body.classList.add('success-page'); // Add class for centering
     const container = document.querySelector('body .container');
     if (container) {
         container.innerHTML = `<div class="order-success"><h1>Thank You, ${customerName}!</h1><p>Your order has been placed successfully.</p><p>You can track the real-time status of your order using the link below.</p><div class="success-buttons"><a href="${statusUrl}" class="status-link" target="_blank">View My Order Status</a><button id="order-again-btn" class="order-again-link">Place Another Order</button></div></div>`;
@@ -193,6 +174,7 @@ submitOrderBtn.addEventListener('click', () => {
             window.location.reload();
         });
     }
+    // --- END OF UPDATE ---
 });
 
 // Initial Load
