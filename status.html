@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Order Status</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Your Order Status</h1>
+        <div class="status-card">
+            <p>Hi, <strong id="customer-name-display">...</strong>!</p>
+            <p>Your order is currently:</p>
+            <h2 id="order-status" class="status-pending">Pending</h2>
+            <div id="order-items-display">
+                <!-- Order items will be listed here -->
+            </div>
+            <p id="order-total-display">Total: RM0.00</p>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="status.js"></script>
+</body>
+</html>

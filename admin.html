@@ -7,16 +7,48 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- THIS IS THE NEW LINE FOR THE NOTIFICATION SOUND -->
     <audio id="notification-sound" src="notification.mp3" preload="auto"></audio>
 
     <div class="container">
+
+        <!-- START: NEW DASHBOARD SUMMARY SECTION -->
+        <div id="dashboard-summary">
+            <div class="summary-card">
+                <h2>Total Revenue</h2>
+                <p id="total-revenue">RM0.00</p>
+            </div>
+            <div class="summary-card">
+                <h2>Total Items Sold</h2>
+                <p id="total-items-sold">0</p>
+            </div>
+            <div class="summary-card">
+                <h2>Today's Best Seller</h2>
+                <p id="best-seller">N/A</p>
+            </div>
+        </div>
+        <!-- END: NEW DASHBOARD SUMMARY SECTION -->
+        
+        <button id="view-history-btn" class="history-button">View Order History</button>
+        <hr>
+
         <h1>Incoming Orders</h1>
         <div id="orders-container"></div>
         <hr>
-        <h1>Daily Sales Count</h1>
+        
+        <h1>Stock Management & Daily Sales</h1>
         <div id="sales-container"></div>
         <button id="reset-sales-btn" class="reset-button">Reset Counts for New Day</button>
+    </div>
+
+    <!-- The pop-up (modal) for order history -->
+    <div id="history-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Recent Order History</h2>
+            <ul id="history-orders-container">
+                <!-- History items will be added here by JavaScript -->
+            </ul>
+        </div>
     </div>
 
     <!-- Firebase SDK -->
