@@ -1,6 +1,3 @@
-// Add this variable at the very top to track order count for sound notifications
-let previousOrderCount = 0;
-
 // --- Firebase Configuration ---
 const firebaseConfig = {
   apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ",
@@ -25,10 +22,41 @@ const historyBtn = document.getElementById('view-history-btn');
 const historyModal = document.getElementById('history-modal');
 const closeBtn = document.querySelector('.close-btn');
 const historyOrdersContainer = document.getElementById('history-orders-container');
+const notificationSound = document.getElementById('notification-sound');
+const soundActivationOverlay = document.getElementById('sound-activation-overlay');
+
+// --- State Variables ---
+let isFirstLoad = true;
+let knownOrderKeys = new Set();
+let isAudioEnabled = false;
+
 
 // --- Functions ---
 
-// UPDATED: Displays dynamic status buttons and hides old completed orders.
+function enableAudio() {
+    if (!isAudioEnabled) {
+        notificationSound.muted = false; // Unmute
+        notificationSound.play().then(() => {
+            notificationSound.pause();
+            notificationSound.currentTime = 0;
+            isAudioEnabled = true;
+            console.log("Audio enabled by user interaction.");
+            if(soundActivationOverlay) {
+                soundActivationOverlay.style.display = 'none';
+            }
+        }).catch(e => {
+            console.error("Audio could not be enabled:", e);
+        });
+    }
+}
+
+// Attach a one-time event listener to the document to enable audio on first click/tap
+document.body.addEventListener('click', enableAudio, { once: true });
+if (soundActivationOverlay) {
+    soundActivationOverlay.addEventListener('click', enableAudio, { once: true });
+}
+
+
 function displayOrders() {
     const ordersRef = database.ref('orders').orderByChild('timestamp').limitToLast(30);
 
@@ -37,20 +65,28 @@ function displayOrders() {
         
         if (!ordersData) {
             ordersContainer.innerHTML = '<p>No orders yet.</p>';
-            previousOrderCount = 0; return;
+            knownOrderKeys.clear(); 
+            isFirstLoad = false;
+            return;
         }
 
-        const newOrderCount = Object.keys(ordersData).length;
-        if (newOrderCount > previousOrderCount && previousOrderCount !== 0) {
-            document.getElementById('notification-sound').play().catch(e => console.error("Sound play failed", e));
+        const currentOrderKeys = new Set(Object.keys(ordersData));
+
+        if (!isFirstLoad) {
+            const newKeys = [...currentOrderKeys].filter(key => !knownOrderKeys.has(key));
+            if (newKeys.length > 0 && isAudioEnabled) {
+                notificationSound.play().catch(e => console.error("Sound play failed", e));
+            }
         }
-        previousOrderCount = newOrderCount;
+        
+        knownOrderKeys = currentOrderKeys;
+        isFirstLoad = false;
 
         ordersContainer.innerHTML = '';
         const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-        const orderKeys = Object.keys(ordersData).reverse();
+        const orderKeysToDisplay = Object.keys(ordersData).reverse();
 
-        for (const key of orderKeys) {
+        for (const key of orderKeysToDisplay) {
             const order = ordersData[key];
             if (order.status === 'completed' && order.completedAt < tenMinutesAgo) {
                 continue;
