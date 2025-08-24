@@ -24,6 +24,9 @@ const closeBtn = document.querySelector('.close-btn');
 const historyOrdersContainer = document.getElementById('history-orders-container');
 const notificationSound = document.getElementById('notification-sound');
 const soundActivationOverlay = document.getElementById('sound-activation-overlay');
+const totalRevenueEl = document.getElementById('total-revenue');
+const totalItemsSoldEl = document.getElementById('total-items-sold');
+const bestSellerEl = document.getElementById('best-seller');
 
 // --- State Variables ---
 let knownOrderKeys = new Set();
@@ -33,93 +36,63 @@ let isAudioEnabled = false;
 function enableAudio() {
     if (!isAudioEnabled) {
         notificationSound.play().then(() => {
-            notificationSound.pause();
-            notificationSound.currentTime = 0;
-            isAudioEnabled = true;
-            if (soundActivationOverlay) soundActivationOverlay.style.display = 'none';
+            notificationSound.pause(); isAudioEnabled = true; if (soundActivationOverlay) soundActivationOverlay.style.display = 'none';
         }).catch(e => console.error("Audio failed to play.", e));
     }
 }
-if (soundActivationOverlay) {
-    soundActivationOverlay.addEventListener('click', enableAudio, { once: true });
-}
+if (soundActivationOverlay) { soundActivationOverlay.addEventListener('click', enableAudio, { once: true }); }
 
 // --- Helper for Smart Grouping ---
 function groupOrderItems(items) {
     const grouped = {};
-    for (const key in items) {
-        const item = items[key];
+    Object.values(items).forEach(item => {
         const uniqueId = item.displayName + (item.customizations || []).sort().join(',');
-        if (grouped[uniqueId]) {
-            grouped[uniqueId].quantity += item.quantity;
-        } else {
-            grouped[uniqueId] = { ...item };
-        }
-    }
+        if (grouped[uniqueId]) { grouped[uniqueId].quantity += item.quantity; }
+        else { grouped[uniqueId] = { ...item }; }
+    });
     return Object.values(grouped);
 }
 
-
-// --- THIS IS THE FULLY UPGRADED FUNCTION WITH SALES CALCULATION ---
-function displayOrders() {
+// --- Main Display Function ---
+function displayOrdersAndSales() {
     const ordersRef = database.ref('orders').orderByChild('timestamp');
-
     ordersRef.on('value', snapshot => {
         const ordersData = snapshot.val() || {};
-        // Clear containers before redrawing
         ordersContainer.innerHTML = '';
         readyOrdersContainer.innerHTML = '';
-
-        // Sound Notification
+        
         const currentOrderKeys = new Set(Object.keys(ordersData));
         if (knownOrderKeys.size > 0) {
             const newKeys = [...currentOrderKeys].filter(key => !knownOrderKeys.has(key) && ordersData[key].status !== 'completed');
-            if (newKeys.length > 0 && isAudioEnabled) {
-                notificationSound.play().catch(e => {});
-            }
+            if (newKeys.length > 0 && isAudioEnabled) { notificationSound.play().catch(e => {}); }
         }
         knownOrderKeys = currentOrderKeys;
-        
-        // --- REAL-TIME SALES CALCULATION ---
-        let totalRevenue = 0;
-        let totalItemsSold = 0;
-        let itemCounts = {};
+
+        // --- Sales Calculation ---
+        let totalRevenue = 0, totalItemsSold = 0, itemCounts = {};
         const todayStart = new Date().setHours(0, 0, 0, 0);
 
         Object.values(ordersData).forEach(order => {
             if (order.status === 'completed' && order.completedAt >= todayStart) {
                 totalRevenue += order.total;
-                for (const itemKey in order.items) {
-                    const item = order.items[itemKey];
+                Object.values(order.items).forEach(item => {
                     totalItemsSold += item.quantity;
-                    const name = item.displayName || "Unknown";
-                    itemCounts[name] = (itemCounts[name] || 0) + item.quantity;
-                }
+                    itemCounts[item.displayName] = (itemCounts[item.displayName] || 0) + item.quantity;
+                });
             }
         });
 
-        // Find Best Seller
-        let bestSellerName = 'N/A';
-        let bestSellerCount = 0;
-        for (const itemName in itemCounts) {
-            if (itemCounts[itemName] > bestSellerCount) {
-                bestSellerCount = itemCounts[itemName];
-                bestSellerName = itemName;
-            }
-        }
+        // --- Update Summary UI ---
+        let bestSellerName = 'N/A', bestSellerCount = 0;
+        for (const name in itemCounts) { if (itemCounts[name] > bestSellerCount) { bestSellerCount = itemCounts[name]; bestSellerName = name; } }
+        totalRevenueEl.textContent = `RM ${totalRevenue.toFixed(2)}`;
+        totalItemsSoldEl.textContent = totalItemsSold;
+        bestSellerEl.textContent = bestSellerName === 'N/A' ? 'N/A' : `${bestSellerName} (${bestSellerCount} sold)`;
         
-        // Update the HTML Summary Cards
-        document.getElementById('total-revenue').textContent = `RM ${totalRevenue.toFixed(2)}`;
-        document.getElementById('total-items-sold').textContent = totalItemsSold;
-        document.getElementById('best-seller').textContent = bestSellerName === 'N/A' ? 'N/A' : `${bestSellerName} (${bestSellerCount} sold)`;
-        // --- END OF SALES CALCULATION ---
-
+        // --- Active Orders Rendering ---
         const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-        const activeOrders = Object.entries(ordersData).filter(([, order]) => order.status !== 'completed' || order.completedAt > tenMinutesAgo);
-
-        let incomingCount = 0;
-        let readyCount = 0;
-        let orderCounter = 1;
+        const activeOrders = Object.entries(ordersData).filter(([,o])=> o.status !== 'completed' || o.completedAt > tenMinutesAgo);
+        let orderCounter = 1, incomingCount = 0, readyCount = 0;
 
         activeOrders.forEach(([key, order]) => {
             const orderCard = document.createElement('div');
@@ -128,28 +101,34 @@ function displayOrders() {
 
             const groupedItems = groupOrderItems(order.items);
             let itemsHtml = '<ul>';
+            
+            // --- THIS IS THE FINAL HTML FIX FOR ALIGNMENT ---
             groupedItems.forEach(item => {
-                itemsHtml += `<li><span class="item-name">${item.displayName}</span><span class="item-quantity">x${item.quantity}</span></li>`;
+                itemsHtml += `
+                    <li>
+                        <div class="item-line">
+                            <span class="item-name">${item.displayName}</span>
+                            <span class="item-quantity">x${item.quantity}</span>
+                        </div>
+                `;
                 if (item.customizations && item.customizations.length > 0) {
                     itemsHtml += `<ul class="customizations-list-admin"><li>- ${item.customizations.join('</li><li>- ')}</li></ul>`;
                 }
+                itemsHtml += '</li>';
             });
+            // --- END OF FIX ---
             itemsHtml += '</ul>';
 
             let actionButtonHtml = '';
-            if (order.status === 'ready' || order.status === 'completed') {
-                actionButtonHtml = `<button class="mark-complete-btn" data-key="${key}">DONE</button>`;
-            } else if (order.status === 'pending') {
-                actionButtonHtml = `<button class="status-btn preparing-btn" data-key="${key}" data-status="preparing">Start Preparing</button>`;
-            } else if (order.status === 'preparing') {
-                actionButtonHtml = `<button class="status-btn ready-btn" data-key="${key}" data-status="ready">Order Ready</button>`;
-            }
+            if (order.status === 'ready' || order.status === 'completed') { actionButtonHtml = `<button class="mark-complete-btn" data-key="${key}">DONE</button>`; }
+            else if (order.status === 'pending') { actionButtonHtml = `<button class="status-btn preparing-btn" data-key="${key}" data-status="preparing">Start Preparing</button>`; }
+            else if (order.status === 'preparing') { actionButtonHtml = `<button class="status-btn ready-btn" data-key="${key}" data-status="ready">Order Ready</button>`; }
             
             orderCard.innerHTML = `
                 <div class="order-header"><h3>${order.customerName} - ${new Date(order.timestamp).toLocaleTimeString()}</h3><span class="order-id-admin">${orderNumber}</span></div>
                 <div class="order-body">${itemsHtml}</div>
                 <div class="order-footer"><span class="total">RM ${order.total.toFixed(2)}</span>${actionButtonHtml}</div>`;
-
+            
             if (order.status === 'ready' || order.status === 'completed') {
                 readyOrdersContainer.appendChild(orderCard);
                 readyCount++;
@@ -159,12 +138,11 @@ function displayOrders() {
             }
             orderCounter++;
         });
-        
-        if (incomingCount === 0) { ordersContainer.innerHTML = '<p>No new incoming orders.</p>'; }
+
+        if (incomingCount === 0 && (readyCount > 0 || activeOrders.length === 0) ) { ordersContainer.innerHTML = '<p>No new incoming orders.</p>'; }
         document.getElementById('ready-section-header').style.display = readyCount > 0 ? 'block' : 'none';
     });
 }
-
 
 function displayManagement() {
     database.ref('products').on('value', snapshot => {
@@ -200,7 +178,7 @@ function displayManagement() {
 }
 
 
-// --- All Event Listeners are now present ---
+// --- All Event Listeners ---
 document.body.addEventListener('click', e => {
     // Status Buttons
     if (e.target.matches('.status-btn')) {
@@ -232,7 +210,6 @@ document.body.addEventListener('click', e => {
                         }
                         return summary;
                     }).join('<br>');
-
                     const li = document.createElement('li');
                     li.className = `history-item ${order.status === 'completed' ? 'completed' : ''}`;
                     li.innerHTML = `
@@ -254,20 +231,30 @@ document.body.addEventListener('click', e => {
 
     // Reset Sales Button
     if (e.target === resetSalesBtn) {
-        if (confirm("Are you sure? This will reset all sold counts to 0 and make all items available.")) {
+        if (confirm("Are you sure? This will DELETE all completed orders, reset product sales to 0, and make everything available for the new day.")) {
             const updates = {};
-            database.ref().once('value').then(snapshot => {
-                const data = snapshot.val();
-                if(data.products) { for (const pKey in data.products) { if (data.products[pKey].variants) { for (const vKey in data.products[pKey].variants) { updates[`products/${pKey}/variants/${vKey}/soldToday`] = 0; updates[`products/${pKey}/variants/${vKey}/isAvailable`] = true; } } } }
-                if(data.ingredients) { for (const iKey in data.ingredients) { updates[`ingredients/${iKey}/isAvailable`] = true; } }
-                database.ref().update(updates).then(() => alert("Daily counts and stock reset successfully."));
+            database.ref('orders').orderByChild('status').equalTo('completed').once('value', orderSnapshot => {
+                orderSnapshot.forEach(childSnapshot => {
+                    updates[`orders/${childSnapshot.key}`] = null;
+                });
+                database.ref().once('value', dataSnapshot => {
+                    const data = dataSnapshot.val();
+                    if(data.products) { for (const pKey in data.products) { if (data.products[pKey].variants) { for (const vKey in data.products[pKey].variants) { updates[`products/${pKey}/variants/${vKey}/soldToday`] = 0; updates[`products/${pKey}/variants/${vKey}/isAvailable`] = true; } } } }
+                    if(data.ingredients) { for (const iKey in data.ingredients) { updates[`ingredients/${iKey}/isAvailable`] = true; } }
+                    database.ref().update(updates).then(() => {
+                        alert("System has been successfully reset for the new day!");
+                    }).catch(err => {
+                        console.error("Error during reset:", err);
+                        alert("An error occurred. Please check the console.");
+                    });
+                });
             });
         }
     }
 });
 
-// Listener for all toggle switches
 document.body.addEventListener('change', e => {
+    // All toggle switches
     if (e.target.matches('.stock-toggle')) {
         database.ref(e.target.dataset.path).set(e.target.checked);
     }
@@ -275,5 +262,5 @@ document.body.addEventListener('change', e => {
 
 
 // --- Initial Load ---
-displayOrders();
+displayOrdersAndSales();
 displayManagement();

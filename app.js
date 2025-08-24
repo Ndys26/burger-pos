@@ -221,14 +221,33 @@ menuContainer.addEventListener('change', e => {
     }
 });
 
+// --- THIS IS THE CORRECTED updateCart FUNCTION ---
 function updateCart() {
     cartItems.innerHTML = '';
     let total = 0;
     for (const key in cart) {
         const item = cart[key];
-        const li = document.createElement('li'); li.classList.add('cart-item');
-        let customizationsHtml = item.customizations && item.customizations.length > 0 ? `<ul class="cart-item-customizations"><li>- ${item.customizations.join('</li><li>- ')}</li></ul>` : '';
-        li.innerHTML = `<div class="cart-item-name">${item.displayName} - RM ${item.price.toFixed(2)}</div><div class="cart-item-controls"><button class="quantity-btn decrease-btn" data-key="${key}">-</button><span class="quantity-display">${item.quantity}</span><button class="quantity-btn increase-btn" data-key="${key}">+</button></div>${customizationsHtml}`;
+        const li = document.createElement('li');
+        li.classList.add('cart-item');
+        
+        // Create the customizations list first
+        let customizationsHtml = '';
+        if (item.customizations && item.customizations.length > 0) {
+            customizationsHtml = `<ul class="cart-item-customizations"><li>- ${item.customizations.join('</li><li>- ')}</li></ul>`;
+        }
+
+        // Build the final HTML with the correct structure
+        li.innerHTML = `
+            <div class="cart-item-details">
+                <div class="cart-item-name">${item.displayName} - RM ${item.price.toFixed(2)}</div>
+                ${customizationsHtml}
+            </div>
+            <div class="cart-item-controls">
+                <button class="quantity-btn decrease-btn" data-key="${key}">-</button>
+                <span class="quantity-display">${item.quantity}</span>
+                <button class="quantity-btn increase-btn" data-key="${key}">+</button>
+            </div>`;
+
         cartItems.appendChild(li);
         total += item.price * item.quantity;
     }
@@ -264,8 +283,6 @@ submitOrderBtn.addEventListener('click', () => {
     document.getElementById('order-again-btn').addEventListener('click', () => window.location.reload());
 });
 
-
-// --- THIS IS THE FIX: The missing Start Order button listener ---
 startOrderBtn.addEventListener('click', () => {
     customerNameGlobal = customerNameInput.value.trim();
     if (customerNameGlobal === '') {
@@ -277,7 +294,6 @@ startOrderBtn.addEventListener('click', () => {
     orderSection.style.display = 'block';
     displayMenu(); 
 });
-// --- END OF FIX ---
 
 
 // --- Initial Load ---
