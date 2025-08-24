@@ -1,0 +1,93 @@
+{
+  "ingredients": {
+    "cheese": {
+      "name": "Cheese",
+      "isAvailable": true
+    }
+  },
+  "products": {
+    "burgerRamly": {
+      "name": "Burger Ramly",
+      "description": "Daging Ramly 70 g dimasak dengan penuh kasih sayang dan ditambah dengan timun, cameralized onion, salad dan tomato. Selain itu disertakan sos cili, mayo, lada hitam dan akhirnya dilengkapi dengan roti.",
+      "category": "Burgers",
+      "displayOrder": 1,
+      "options": [ { "key": "cheese", "name": "Add Cheese", "price": 1.00 } ],
+      "customizations": {
+        "Sayur": [ { "id": "tnsayur", "name": "Tak nak sayur (semua)" }, { "id": "tntimun", "name": "Tak nak timun" }, { "id": "tnbawang", "name": "Tak nak bawang caramel" }, { "id": "tntomato", "name": "Tak nak tomato" }, { "id": "tnsalad", "name": "Tak nak salad" } ],
+        "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
+      },
+      "variants": {
+        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 4.00, "isAvailable": true },
+        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 5.00, "isAvailable": true },
+        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 5.50, "isAvailable": true },
+        "ayamDoubleSpecial": { "type": "Ayam", "style": "Double Special", "price": 6.50, "isAvailable": true },
+        "ayamTriple": { "type": "Ayam", "style": "Triple", "price": 7.00, "isAvailable": true },
+        "ayamTripleSpecial": { "type": "Ayam", "style": "Triple Special", "price": 8.00, "isAvailable": true },
+        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 4.00, "isAvailable": true },
+        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 5.00, "isAvailable": true },
+        "dagingDouble": { "type": "Daging", "style": "Double", "price": 5.50, "isAvailable": true },
+        "dagingDoubleSpecial": { "type": "Daging", "style": "Double Special", "price": 6.50, "isAvailable": true },
+        "dagingTriple": { "type": "Daging", "style": "Triple", "price": 7.00, "isAvailable": true },
+        "dagingTripleSpecial": { "type": "Daging", "style": "Triple Special", "price": 8.00, "isAvailable": true },
+        "kahwin": { "style": "Kahwin", "price": 5.50, "isAvailable": true },
+        "kahwinSpecial": { "style": "Kahwin Special", "price": 6.50, "isAvailable": true }
+      }
+    },
+    "burgerBenjo": {
+        "name": "Burger Benjo",
+        "description": "Telur bulat digoreng dan ditambah dengan timun, cameralized onion, salad dan tomato. Selain itu disertakan sos cili, mayo, lada hitam dan akhirnya dilengkapi dengan roti.",
+        "category": "Burgers",
+        "displayOrder": 2,
+        "options": [ { "key": "cheese", "name": "Add Cheese", "price": 1.00 } ],
+        "customizations": {
+            "Sayur": [ { "id": "tnsayur", "name": "Tak nak sayur (semua)" }, { "id": "tntimun", "name": "Tak nak timun" }, { "id": "tnbawang", "name": "Tak nak bawang caramel" }, { "id": "tntomato", "name": "Tak nak tomato" }, { "id": "tnsalad", "name": "Tak nak salad" } ],
+            "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
+        },
+        "variants": {
+            "biasa": { "style": "Biasa", "price": 3.00, "isAvailable": true },
+            "special": { "style": "Special", "price": 4.00, "isAvailable": true },
+            "double": { "style": "Double", "price": 4.00, "isAvailable": true }
+        }
+    },
+    "maggiDagingBurger": {
+      "name": "Maggi Daging Burger",
+      "description": "Maggi Kari di masak bersama telur dan bebola ikan dan disertakan Patty Ramly dan sos lada hitam.",
+      "displayOrder": 3,
+      "options": [
+        { "key": "addTelur", "name": "Tambah Telur", "price": 1.00 },
+        { "key": "noFishball", "name": "Tak nak bebola ikan", "price": 0 }
+      ],
+      "variants": {
+        "kosong": { "style": "Kosong", "price": 2.50, "isAvailable": true },
+        "telur": { "style": "Telur", "price": 4.00, "isAvailable": true },
+        "biasaPattyAyam": { "style": "Biasa", "type": "Patty Ayam", "price": 6.00, "isAvailable": true },
+        "biasaPattyDaging": { "style": "Biasa", "type": "Patty Daging", "price": 6.00, "isAvailable": true },
+        "biasaOblongAyam": { "style": "Biasa", "type": "Oblong Ayam", "price": 8.00, "isAvailable": true },
+        "biasaOblongDaging": { "style": "Biasa", "type": "Oblong Daging", "price": 8.00, "isAvailable": true },
+        "biasaOblongKambing": { "style": "Biasa", "type": "Oblong Kambing", "price": 10.00, "isAvailable": true }
+      }
+    },
+    "oblong": {
+      "name": "Oblong",
+      "description": "Patty Ramly Oblong 100 g dimasak sempurna dengan rasa-rasa smoky ditambah dengan timun, cameralized onion, salad dan tomato. Selain itu disertakan sos cili, mayo, lada hitam dan akhirnya dilengkapi dengan roti.",
+      "category": "Burgers",
+      "displayOrder": 4,
+      "options": [ { "key": "cheese", "name": "Add Cheese", "price": 1.00 } ],
+       "customizations": {
+        "Sayur": [ { "id": "tnsayur", "name": "Tak nak sayur (semua)" }, { "id": "tntimun", "name": "Tak nak timun" }, { "id": "tnbawang", "name": "Tak nak bawang caramel" }, { "id": "tntomato", "name": "Tak nak tomato" }, { "id": "tnsalad", "name": "Tak nak salad" } ],
+        "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
+      },
+      "variants": {
+        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 6.00, "isAvailable": true },
+        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 7.00, "isAvailable": true },
+        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 8.00, "isAvailable": true },
+        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 6.00, "isAvailable": true },
+        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 7.00, "isAvailable": true },
+        "dagingDouble": { "type": "Daging", "style": "Double", "price": 8.00, "isAvailable": true },
+        "kambingBiasa": { "type": "Kambing", "style": "Biasa", "price": 8.00, "isAvailable": true },
+        "kambingSpecial": { "type": "Kambing", "style": "Special", "price": 9.00, "isAvailable": true },
+        "kambingDouble": { "type": "Kambing", "style": "Double", "price": 10.00, "isAvailable": true }
+      }
+    }
+  }
+}

@@ -7,26 +7,28 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+
+    <!-- This section is shown first -->
+    <div id="welcome-section" class="container">
+        <h1>Welcome!</h1>
+        <p>Please enter your name to start your order.</p>
+        <input type="text" id="customer-name-input" placeholder="Enter your name here" autocomplete="name">
+        <button id="start-order-btn">Start Ordering</button>
+    </div>
+
+    <!-- This section is hidden until a name is entered -->
+    <div id="order-section" class="container" style="display: none;">
         <h1>Our Menu</h1>
+        <p>Ordering for: <strong id="display-customer-name"></strong></p>
+        <hr>
+        
         <div id="menu-container"></div>
+        
         <h2>Your Order</h2>
         <ul id="cart-items"></ul>
         <p>Total: RM<span id="cart-total">0.00</span></p>
 
-        <!-- START: Name Input -->
-        <div class="customer-name-section">
-            <label for="customer-name">Your Name:</label>
-            <input type="text" id="customer-name" placeholder="Enter your name here">
-        </div>
-        <!-- END: Name Input -->
-
-        <!-- START: EDITED PART - Added Remarks Box -->
-        <div class="remarks-section">
-            <label for="order-remarks">Remarks (e.g., no chili, extra mayo):</label>
-            <textarea id="order-remarks" rows="3" placeholder="Type any special requests here"></textarea>
-        </div>
-        <!-- END: EDITED PART -->
+        <!-- Remarks and Name input have been removed from here as requested -->
 
         <button id="submit-order">Place Order</button>
     </div>
@@ -35,5 +37,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script src="app.js"></script>
+
 </body>
 </html>

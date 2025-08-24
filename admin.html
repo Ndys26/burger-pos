@@ -10,12 +10,20 @@
     <audio id="notification-sound" src="notification.mp3" preload="auto"></audio>
 
     <div class="container">
+        <div id="sound-activation-overlay">Click anywhere to enable sound notifications</div>
+        
+        <h1>Incoming Orders</h1>
+        <div id="orders-container"></div>
 
-        <!-- START: NEW DASHBOARD SUMMARY SECTION -->
+        <h1 id="ready-section-header" style="display: none;">Ready for Pickup</h1>
+        <div id="ready-orders-container"></div>
+        <hr>
+
+        <!-- THIS IS THE NEWLY ADDED DASHBOARD SUMMARY SECTION -->
         <div id="dashboard-summary">
             <div class="summary-card">
-                <h2>Total Revenue</h2>
-                <p id="total-revenue">RM0.00</p>
+                <h2>Total Revenue Today</h2>
+                <p id="total-revenue">RM 0.00</p>
             </div>
             <div class="summary-card">
                 <h2>Total Items Sold</h2>
@@ -26,17 +34,22 @@
                 <p id="best-seller">N/A</p>
             </div>
         </div>
-        <!-- END: NEW DASHBOARD SUMMARY SECTION -->
+        <!-- END OF NEW SECTION -->
+
+        <div class="management-columns">
+            <div class="column">
+                <h1>Product Stock & Sales</h1>
+                <div id="sales-container"></div>
+            </div>
+            <div class="column">
+                <h1>Ingredient Stock</h1>
+                <div id="ingredients-container"></div>
+            </div>
+        </div>
         
-        <button id="view-history-btn" class="history-button">View Order History</button>
         <hr>
 
-        <h1>Incoming Orders</h1>
-        <div id="orders-container"></div>
-        <hr>
-        
-        <h1>Stock Management & Daily Sales</h1>
-        <div id="sales-container"></div>
+        <button id="view-history-btn" class="history-button">View Order History</button>
         <button id="reset-sales-btn" class="reset-button">Reset Counts for New Day</button>
     </div>
 
@@ -45,16 +58,9 @@
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>Recent Order History</h2>
-            <ul id="history-orders-container">
-                <!-- History items will be added here by JavaScript -->
-            </ul>
+            <ul id="history-orders-container"></ul>
         </div>
     </div>
-    
-    <div id="sound-activation-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); color: white; display: flex; justify-content: center; align-items: center; z-index: 1000; font-size: 24px; cursor: pointer;">
-        Click anywhere to enable sound notifications
-    </div>
-
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>

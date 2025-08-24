@@ -7,16 +7,25 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="container status-container">
         <h1>Your Order Status</h1>
-        <div class="status-card">
-            <p>Hi, <strong id="customer-name-display">...</strong>!</p>
+        
+        <!-- NEW: Added element for the unique order number -->
+        <h2 id="order-id-display">Loading order...</h2>
+
+        <!-- This wrapper is for the main content box -->
+        <div id="status-card">
+            <p id="customer-name-greeting"></p>
             <p>Your order is currently:</p>
-            <h2 id="order-status" class="status-pending">Pending</h2>
-            <div id="order-items-display">
-                <!-- Order items will be listed here -->
-            </div>
-            <p id="order-total-display">Total: RM0.00</p>
+            
+            <!-- This DIV will now get the color class (e.g., "status-pending") -->
+            <div id="order-status">Loading...</div>
+
+            <h3>Order Summary:</h3>
+            <ul id="order-items">
+                <!-- Items will be loaded here by JavaScript -->
+            </ul>
+            <p class="status-total" id="order-total"></p>
         </div>
     </div>
 
@@ -26,3 +35,4 @@
     <script src="status.js"></script>
 </body>
 </html>
+

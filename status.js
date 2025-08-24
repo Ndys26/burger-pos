@@ -1,59 +1,88 @@
 // --- Firebase Configuration ---
 const firebaseConfig = {
-    apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB"
+    apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ",
+    authDomain: "counting-pos-food-system.firebaseapp.com",
+    databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "counting-pos-food-system",
+    storageBucket: "counting-pos-food-system.firebasestorage.app",
+    messagingSenderId: "663603508723",
+    appId: "1:663603508723:web:14699d4ccf31faaee5ce86",
+    measurementId: "G-LYPFSMCMXB"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// --- DOM Elements (Updated to match final status.html) ---
+const greetingElement = document.getElementById('customer-name-greeting');
+const orderIdDisplay = document.getElementById('order-id-display');
+const statusElement = document.getElementById('order-status');
+const itemsList = document.getElementById('order-items');
+const totalElement = document.getElementById('order-total');
+
 // --- Main Logic ---
-document.addEventListener('DOMContentLoaded', () => {
-    // 1. Get the unique Order ID from the website URL
-    const params = new URLSearchParams(window.location.search);
-    const orderId = params.get('id');
+function getOrderIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+}
 
-    if (!orderId) {
-        document.querySelector('.container').innerHTML = '<h1>No Order ID provided.</h1>';
-        return;
-    }
+const orderId = getOrderIdFromUrl();
 
-    // 2. Create a reference to that specific order in the database
+if (!orderId) {
+    // Display error if the link is missing the ID
+    document.querySelector('.container').innerHTML = '<h1>Error</h1><p>No order ID was found in the URL. Please check your link.</p>';
+} else {
+    // Create a reference to the specific order in the database
     const orderRef = database.ref('orders/' + orderId);
 
-    // 3. Listen for REAL-TIME changes to the order's data
+    // Listen for any changes to that order's data
     orderRef.on('value', (snapshot) => {
-        const orderData = snapshot.val();
-        if (orderData) {
-            updateStatusPage(orderData);
-        } else {
-            document.querySelector('.container').innerHTML = '<h1>Order not found.</h1>';
+        const order = snapshot.val();
+
+        if (!order) {
+            document.querySelector('.container').innerHTML = '<h1>Error</h1><p>Sorry, this order could not be found.</p>';
+            return;
         }
+
+        // --- All fixes are applied below ---
+
+        // 1. Display the unique Order Number
+        orderIdDisplay.textContent = `Order #${orderId.slice(-6).toUpperCase()}`;
+
+        // 2. Display the customer greeting
+        greetingElement.textContent = `Hi, ${order.customerName}!`;
+
+        // 3. Update the status text and apply the correct color class
+        const currentStatus = order.status || 'pending';
+        statusElement.textContent = currentStatus; // e.g., "pending", "preparing"
+        statusElement.className = `status-${currentStatus}`; // Adds the class for styling, e.g., "status-pending"
+
+        // 4. FIX "undefined" BUG by using 'displayName'
+        itemsList.innerHTML = ''; // Clear old items before adding new ones
+        for (const key in order.items) {
+            const item = order.items[key];
+            // This is the crucial fix: It uses the full, readable name saved by app.js
+            const itemName = item.displayName || "Item Name Not Found"; 
+            
+            const li = document.createElement('li');
+            li.textContent = `${itemName} x${item.quantity}`;
+            
+            // Also display any customizations
+            if (item.customizations && item.customizations.length > 0) {
+                const customUl = document.createElement('ul');
+                customUl.className = 'customizations-list-status';
+                item.customizations.forEach(cust => {
+                    const customLi = document.createElement('li');
+                    customLi.textContent = `- ${cust}`;
+                    customUl.appendChild(customLi);
+                });
+                li.appendChild(customUl);
+            }
+            itemsList.appendChild(li);
+        }
+
+        // 5. Display the total
+        totalElement.textContent = `Total: RM ${order.total.toFixed(2)}`;
     });
-});
-
-// 4. Function to update the HTML with the latest order data
-function updateStatusPage(order) {
-    const statusEl = document.getElementById('order-status');
-    const nameEl = document.getElementById('customer-name-display');
-    const itemsEl = document.getElementById('order-items-display');
-    const totalEl = document.getElementById('order-total-display');
-
-    nameEl.textContent = order.customerName;
-    totalEl.textContent = `Total: RM${order.total.toFixed(2)}`;
-
-    // Update status text and color
-    let statusText = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-    statusEl.textContent = statusText;
-    statusEl.className = 'status-' + order.status; // e.g., 'status-pending', 'status-preparing'
-
-    // Display the items
-    itemsEl.innerHTML = ''; // Clear previous items
-    const itemsList = document.createElement('ul');
-    for (const key in order.items) {
-        const item = order.items[key];
-        const li = document.createElement('li');
-        li.textContent = `${item.name} x${item.quantity}`;
-        itemsList.appendChild(li);
-    }
-    itemsEl.appendChild(itemsList);
 }

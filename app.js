@@ -1,181 +1,284 @@
 // --- Firebase Configuration ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603S508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB"
-};
+const firebaseConfig = { apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB" };
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
+
+// --- DOM Elements ---
+const welcomeSection = document.getElementById('welcome-section');
+const orderSection = document.getElementById('order-section');
+const customerNameInput = document.getElementById('customer-name-input');
+const startOrderBtn = document.getElementById('start-order-btn');
+const displayCustomerName = document.getElementById('display-customer-name');
 const menuContainer = document.getElementById('menu-container');
 const cartItems = document.getElementById('cart-items');
 const cartTotal = document.getElementById('cart-total');
 const submitOrderBtn = document.getElementById('submit-order');
+
+// --- Global State ---
 let cart = {};
+let customerNameGlobal = '';
+let ingredientsAvailability = {};
 
-// --- Helper Functions for Acronyms ---
-const getProductShortName = (name) => {
-    if (name.includes('Ramly')) return 'Ramly'; if (name.includes('Benjo')) return 'Benjo';
-    if (name.includes('Oblong')) return 'Oblong'; if (name.includes('Maggi')) return 'Maggi'; return name;
-};
-const getAcronymForType = (type) => {
-    if (!type) return '';
-    const map = { 'Patty Ayam': 'PA', 'Patty Daging': 'PD', 'Oblong Ayam': 'OA', 'Oblong Daging': 'OD', 'Oblong Kambing': 'OK' };
-    return map[type] || type.charAt(0).toUpperCase();
-};
-const getAcronymForStyle = (style) => {
-    if (!style || style === 'Biasa') return '';
-    const map = { 'Special': 'S', 'Double': 'D', 'Double Special': 'DS', 'Triple': 'T', 'Triple Special': 'TS', 'Biasa Special': 'BS' };
-    return map[style] || '';
-};
-const getAcronymForOption = (optionName) => {
-    if (optionName.includes('Cheese')) return 'C'; if (optionName.includes('Telur')) return 'T';
-    if (optionName.includes('Maggi')) return 'M'; if (optionName.includes('Daging')) return 'D+'; return '';
-};
+// --- Listen for Ingredient Stock ---
+function listenForIngredientAvailability() {
+    database.ref('ingredients').on('value', (snapshot) => {
+        ingredientsAvailability = snapshot.val() || {};
+        if (orderSection.style.display === 'block') {
+            displayMenu();
+        }
+    });
+}
 
-// --- Main Menu and Pricing Logic ---
+// --- Displays a clean, collapsed menu with price ranges ---
 function displayMenu() {
-    const productsRef = database.ref('products');
-    productsRef.on('value', (snapshot) => {
+    database.ref('products').on('value', (snapshot) => {
         const productsData = snapshot.val();
         menuContainer.innerHTML = '';
-        if (!productsData) { menuContainer.innerHTML = "<p>Menu is currently unavailable.</p>"; return; }
-        const productsArray = Object.keys(productsData).map(key => ({ key: key, ...productsData[key] }));
+        if (!productsData) { menuContainer.innerHTML = "<p>Menu is not available.</p>"; return; }
+        
+        const productsArray = Object.keys(productsData).map(key => ({ ...productsData[key], key }));
         productsArray.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+
         productsArray.forEach(product => {
-            const productKey = product.key;
-            const productCard = document.createElement('div'); productCard.classList.add('product-card'); productCard.id = productKey;
-            const types = [...new Set(Object.values(product.variants).map(v => v.type))].filter(Boolean);
-            const styles = [...new Set(Object.values(product.variants).map(v => v.style))].filter(Boolean);
-            let typesHtml = types.length > 0 ? `<div class="choice-group"><h4>Pilih Daging:</h4>${types.map(type => { const isAnyVariantAvailable = Object.values(product.variants).some(v => v.type === type && v.isAvailable); return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_type" value="${type}" ${isAnyVariantAvailable ? '' : 'disabled'}>${type}</label>`; }).join('')}</div>` : '';
-            let stylesHtml = styles.length > 0 ? `<div class="choice-group"><h4>Pilih Jenis:</h4>${styles.map(style => { const isAnyVariantAvailable = Object.values(product.variants).some(v => v.style === style && v.isAvailable); return `<label class="${isAnyVariantAvailable ? '' : 'disabled-option'}"><input type="radio" name="${productKey}_style" value="${style}" ${isAnyVariantAvailable ? '' : 'disabled'}>${style}</label>`; }).join('')}</div>` : '';
-            let optionsHtml = product.options ? `<div class="choice-group"><h4>Tambah:</h4>${product.options.map(opt => `<label><input type="checkbox" class="option-checkbox" data-price="${opt.price}" data-name="${opt.name}">${opt.name} (+RM${opt.price.toFixed(2)})</label>`).join('')}</div>` : '';
-            productCard.innerHTML = `<h2>${product.name}</h2>${typesHtml}${stylesHtml}${optionsHtml}<div class="product-footer"><span class="price-display">Pilih untuk lihat harga</span><button class="add-to-cart-btn" disabled>Add</button></div>`;
-            menuContainer.appendChild(productCard);
+            const card = document.createElement('div');
+            card.className = 'product-card collapsed';
+            card.id = product.key;
+            
+            const prices = Object.values(product.variants).map(v => v.price);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            let priceRangeText = `RM${minPrice.toFixed(2)}`;
+            if (minPrice !== maxPrice) {
+                priceRangeText += ` - RM${maxPrice.toFixed(2)}`;
+            }
+
+            card.innerHTML = `
+                <div class="product-header">
+                    <h2>${product.name}</h2>
+                    <span class="price-range">${priceRangeText}</span>
+                </div>
+                <div class="product-body" style="display: none;">
+                    <!-- Content will be built here -->
+                </div>
+            `;
+            menuContainer.appendChild(card);
         });
     });
 }
-function updatePrice(cardElement) {
-    const productKey = cardElement.id;
-    const productsRef = database.ref('products/' + productKey);
-    productsRef.once('value', (snapshot) => {
-        const product = snapshot.val(); if (!product) return;
-        const selectedType = cardElement.querySelector(`input[name="${productKey}_type"]:checked`)?.value;
-        const selectedStyle = cardElement.querySelector(`input[name="${productKey}_style"]:checked`)?.value;
-        const addButton = cardElement.querySelector('.add-to-cart-btn');
-        const priceDisplay = cardElement.querySelector('.price-display');
-        const hasTypes = !!Object.values(product.variants).find(v => v.type);
-        const hasStyles = !!Object.values(product.variants).find(v => v.style);
-        let variantFound = null; let isSelectionComplete = (!hasTypes || selectedType) && (!hasStyles || selectedStyle);
-        for (const key in product.variants) {
-            const variant = product.variants[key];
-            const typeMatch = !hasTypes || variant.type === selectedType;
-            const styleMatch = !hasStyles || variant.style === selectedStyle;
-            if (typeMatch && styleMatch) { variantFound = variant; break; }
+
+// --- Builds the full set of options when a card is expanded ---
+function buildProductOptions(card, product) {
+    const productKey = product.key;
+    const body = card.querySelector('.product-body');
+    body.innerHTML = ''; 
+
+    let descriptionHtml = product.description ? `<p class="product-description">${product.description}</p>` : '';
+    const styles = [...new Set(Object.values(product.variants).map(v => v.style))].filter(Boolean);
+    const types = [...new Set(Object.values(product.variants).map(v => v.type))].filter(Boolean);
+    
+    let stylesHtml = styles.length ? `<div class="choice-group style-group"><h4>Pilih Jenis:</h4><div class="options-wrapper">${styles.map(style => `<label><input type="radio" name="${productKey}_style" value="${style}">${style}</label>`).join('')}</div></div>` : '';
+    let typesHtml = types.length ? `<div class="choice-group type-group" style="display:none;"><h4>Pilih Daging:</h4><div class="options-wrapper">${types.map(type => `<label><input type="radio" name="${productKey}_type" value="${type}">${type}</label>`).join('')}</div></div>` : '';
+    
+    let customizationsHtml = `<div class="customizations-container" style="display:none;"><h4>Penyesuaian:</h4>`;
+    if (product.options) {
+        customizationsHtml += `<div class="options-wrapper">${product.options.map(opt => {
+            const isAvailable = ingredientsAvailability[opt.key]?.isAvailable ?? true;
+            return `<label class="${!isAvailable ? 'disabled-option' : ''}"><input type="checkbox" class="option-checkbox" data-price="${opt.price}" data-name="${opt.name}" ${!isAvailable ? 'disabled' : ''}>${opt.name}${opt.price > 0 ? ` (+RM${opt.price.toFixed(2)})` : ''}</label>`;
+        }).join('')}</div>`;
+    }
+    if (product.customizations) {
+        for (const category in product.customizations) {
+            customizationsHtml += `<div class="sub-customization-group"><h5>${category}</h5><div class="options-wrapper">`;
+            customizationsHtml += product.customizations[category].map(item => `<label><input type="checkbox" class="customization-checkbox" data-id="${item.id}" data-name="${item.name}">${item.name}</label>`).join('');
+            customizationsHtml += `</div></div>`;
         }
-        if (variantFound && variantFound.isAvailable && isSelectionComplete) {
+    }
+    customizationsHtml += `</div>`;
+    
+    const footerHtml = `<div class="product-footer-actions">
+        <span class="price-display">Select options...</span>
+        <button class="add-to-cart-btn" disabled>Add to Order</button>
+    </div>`;
+
+    body.innerHTML = `${descriptionHtml}${stylesHtml}${typesHtml}${customizationsHtml}${footerHtml}`;
+    body.style.display = 'block';
+}
+
+// --- Updates the UI based on user selections ---
+function updateProductUI(card) {
+    const productKey = card.id;
+    database.ref('products/' + productKey).once('value', snapshot => {
+        const product = snapshot.val(); if (!product) return;
+
+        const selectedStyle = card.querySelector(`input[name="${productKey}_style"]:checked`)?.value;
+        const selectedType = card.querySelector(`input[name="${productKey}_type"]:checked`)?.value;
+        
+        const typeGroup = card.querySelector('.type-group');
+        const customizationsContainer = card.querySelector('.customizations-container');
+        const priceDisplay = card.querySelector('.price-display');
+        const addButton = card.querySelector('.add-to-cart-btn');
+
+        if (selectedStyle) {
+            if (customizationsContainer) customizationsContainer.style.display = 'block';
+            const needsMeat = Object.values(product.variants).some(v => v.style === selectedStyle && v.type);
+            if (needsMeat) {
+                if (typeGroup) typeGroup.style.display = 'block';
+            } else {
+                if (typeGroup) typeGroup.style.display = 'none';
+                card.querySelectorAll(`input[name="${productKey}_type"]`).forEach(radio => radio.checked = false);
+            }
+        } else {
+             if (typeGroup) typeGroup.style.display = 'none';
+             if (customizationsContainer) customizationsContainer.style.display = 'none';
+        }
+
+        let variantFound = null;
+        for (const vKey in product.variants) {
+            const v = product.variants[vKey];
+            if (v.style === selectedStyle && (!v.type || v.type === selectedType)) { variantFound = v; break; }
+        }
+
+        const isReadyToAdd = variantFound && (!variantFound.type || selectedType);
+        
+        if (isReadyToAdd && variantFound.isAvailable) {
             let currentPrice = variantFound.price;
-            cardElement.querySelectorAll('.option-checkbox:checked').forEach(box => { currentPrice += parseFloat(box.dataset.price); });
-            priceDisplay.textContent = `RM${currentPrice.toFixed(2)}`;
+            card.querySelectorAll('.option-checkbox:checked').forEach(box => currentPrice += parseFloat(box.dataset.price));
+            priceDisplay.textContent = `RM ${currentPrice.toFixed(2)}`;
             addButton.disabled = false;
         } else {
-            if (variantFound && !variantFound.isAvailable) { priceDisplay.textContent = 'Out of Stock'; }
-            else { priceDisplay.textContent = 'Pilih untuk lihat harga'; }
+            priceDisplay.textContent = 'Select options...';
             addButton.disabled = true;
         }
     });
 }
 
 // --- Event Listeners ---
-menuContainer.addEventListener('change', (e) => {
-    if (e.target.type === 'radio' || e.target.type === 'checkbox') {
-        const card = e.target.closest('.product-card'); if (card) updatePrice(card);
-    }
-});
 menuContainer.addEventListener('click', (e) => {
+    const card = e.target.closest('.product-card');
+    if (!card) return;
+
+    if (e.target.closest('.product-header') && card.classList.contains('collapsed')) {
+        card.classList.remove('collapsed');
+        database.ref('products/' + card.id).once('value', snapshot => {
+            buildProductOptions(card, { ...snapshot.val(), key: card.id });
+        });
+        return;
+    }
+    
     if (e.target.classList.contains('add-to-cart-btn')) {
-        const card = e.target.closest('.product-card');
         const productKey = card.id;
         const productName = card.querySelector('h2').textContent;
         const selectedType = card.querySelector(`input[name="${productKey}_type"]:checked`)?.value;
         const selectedStyle = card.querySelector(`input[name="${productKey}_style"]:checked`)?.value;
-        database.ref('products/' + productKey).once('value', (snapshot) => {
+        
+        database.ref('products/' + productKey).once('value', snapshot => {
             const productData = snapshot.val();
-            let variantKey = null, variantFound = null;
+            let variantFound = null, variantKey = null;
             for (const vKey in productData.variants) {
-                const variant = productData.variants[vKey];
-                const typeMatch = selectedType ? variant.type === selectedType : true;
-                const styleMatch = selectedStyle ? variant.style === selectedStyle : true;
-                if (typeMatch && styleMatch) { variantKey = vKey; variantFound = variant; break; }
+                const v = productData.variants[vKey];
+                if (v.style === selectedStyle && (!v.type || v.type === selectedType)) {
+                    variantFound = v; variantKey = vKey; break;
+                }
             }
             if (!variantFound) return;
-            const shortName = getProductShortName(productName);
-            let acronymParts = [getAcronymForType(variantFound.type), getAcronymForStyle(variantFound.style)];
+
             let finalPrice = variantFound.price;
-            let optionNamesForAcronym = [];
-            card.querySelectorAll('.option-checkbox:checked').forEach(box => {
-                finalPrice += parseFloat(box.dataset.price);
-                optionNamesForAcronym.push(getAcronymForOption(box.dataset.name));
+            let customizations = [];
+            card.querySelectorAll('.option-checkbox:checked, .customization-checkbox:checked').forEach(box => {
+                if (box.dataset.price) finalPrice += parseFloat(box.dataset.price);
+                customizations.push(box.dataset.name);
             });
-            const finalAcronym = acronymParts.concat(optionNamesForAcronym).filter(Boolean).join('');
-            const kitchenName = `${shortName}: ${finalAcronym}`;
-            const cartKey = `${productKey}_${variantKey}_${optionNamesForAcronym.sort().join('')}`;
-            if (cart[cartKey]) { cart[cartKey].quantity++; }
-            else { cart[cartKey] = { productKey, variantKey, name: kitchenName, price: finalPrice, quantity: 1 }; }
+            
+            const displayName = [productName, selectedStyle, selectedType].filter(Boolean).join(' ');
+            
+            const cartKey = `${productKey}_${variantKey}_${customizations.sort().join('')}`;
+            if (cart[cartKey]) { cart[cartKey].quantity++; } 
+            else { cart[cartKey] = { productKey, variantKey, displayName, price: finalPrice, quantity: 1, customizations }; }
+            
             updateCart();
-            card.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(input => input.checked = false);
-            updatePrice(card);
+            
+            card.querySelector('.product-body').style.display = 'none';
+            card.querySelector('.product-body').innerHTML = '';
+            card.classList.add('collapsed');
         });
     }
 });
+
+menuContainer.addEventListener('change', e => {
+    if (e.target.matches('input')) {
+        const card = e.target.closest('.product-card');
+        if (card) {
+            const masterSayur = card.querySelector('[data-id="tnsayur"]');
+            if(masterSayur) {
+                 const isChecked = masterSayur.checked;
+                 card.querySelectorAll('[data-id="tntimun"],[data-id="tnbawang"],[data-id="tntomato"],[data-id="tnsalad"]').forEach(childCheckbox => {
+                     childCheckbox.disabled = isChecked;
+                     if (isChecked) childCheckbox.checked = false;
+                 });
+            }
+            updateProductUI(card);
+        }
+    }
+});
+
 function updateCart() {
-    cartItems.innerHTML = ''; let total = 0;
+    cartItems.innerHTML = '';
+    let total = 0;
     for (const key in cart) {
         const item = cart[key];
         const li = document.createElement('li'); li.classList.add('cart-item');
-        li.innerHTML = `<span class="cart-item-name">${item.name} - RM${item.price.toFixed(2)}</span><div class="cart-item-controls"><button class="quantity-btn decrease-btn" data-cart-key="${key}">-</button><span class="quantity-display">${item.quantity}</span><button class="quantity-btn increase-btn" data-cart-key="${key}">+</button></div>`;
-        cartItems.appendChild(li); total += item.price * item.quantity;
+        let customizationsHtml = item.customizations && item.customizations.length > 0 ? `<ul class="cart-item-customizations"><li>- ${item.customizations.join('</li><li>- ')}</li></ul>` : '';
+        li.innerHTML = `<div class="cart-item-name">${item.displayName} - RM ${item.price.toFixed(2)}</div><div class="cart-item-controls"><button class="quantity-btn decrease-btn" data-key="${key}">-</button><span class="quantity-display">${item.quantity}</span><button class="quantity-btn increase-btn" data-key="${key}">+</button></div>${customizationsHtml}`;
+        cartItems.appendChild(li);
+        total += item.price * item.quantity;
     }
     cartTotal.textContent = total.toFixed(2);
 }
-cartItems.addEventListener('click', (e) => {
-    const target = e.target;
-    const cartKey = target.dataset.cartKey;
-    if (target.classList.contains('decrease-btn')) {
-        if (cart[cartKey] && cart[cartKey].quantity > 1) { cart[cartKey].quantity--; }
-        else if (cart[cartKey]) { delete cart[cartKey]; }
-        updateCart();
-    }
-    if (target.classList.contains('increase-btn')) {
-        if (cart[cartKey]) { cart[cartKey].quantity++; updateCart(); }
-    }
+
+cartItems.addEventListener('click', e => {
+    const key = e.target.dataset.key;
+    if (!key || !cart[key]) return;
+    if (e.target.matches('.increase-btn')) cart[key].quantity++;
+    if (e.target.matches('.decrease-btn')) cart[key].quantity--;
+    if (cart[key].quantity <= 0) delete cart[key];
+    updateCart();
 });
+
 submitOrderBtn.addEventListener('click', () => {
-    const customerName = document.getElementById('customer-name').value;
-    const customerRemarks = document.getElementById('order-remarks').value;
     if (Object.keys(cart).length === 0) { alert("Your cart is empty!"); return; }
-    if (customerName.trim() === '') { alert("Please enter your name!"); return; }
+    if (!customerNameGlobal) { alert("An error occurred. Please refresh."); return; }
     const newOrderRef = database.ref('orders').push();
     newOrderRef.set({
-        customerName, remarks: customerRemarks, items: cart,
-        total: parseFloat(cartTotal.textContent), timestamp: Date.now(), status: "pending"
+        customerName: customerNameGlobal,
+        items: cart,
+        total: parseFloat(cartTotal.textContent),
+        timestamp: Date.now(),
+        status: "pending"
     });
     for (const key in cart) {
         const item = cart[key];
-        const itemRef = database.ref(`products/${item.productKey}/variants/${item.variantKey}/soldToday`);
-        itemRef.transaction(currentValue => (currentValue || 0) + item.quantity);
+        database.ref(`products/${item.productKey}/variants/${item.variantKey}/soldToday`).transaction(currentValue => (currentValue || 0) + item.quantity);
     }
     const orderId = newOrderRef.key;
-    const statusUrl = `status.html?id=${orderId}`;
-    
-    // --- THIS IS THE ONLY UPDATED PART ---
-    document.body.classList.add('success-page'); // Add class for centering
-    const container = document.querySelector('body .container');
-    if (container) {
-        container.innerHTML = `<div class="order-success"><h1>Thank You, ${customerName}!</h1><p>Your order has been placed successfully.</p><p>You can track the real-time status of your order using the link below.</p><div class="success-buttons"><a href="${statusUrl}" class="status-link" target="_blank">View My Order Status</a><button id="order-again-btn" class="order-again-link">Place Another Order</button></div></div>`;
-        document.getElementById('order-again-btn').addEventListener('click', () => {
-            window.location.reload();
-        });
-    }
-    // --- END OF UPDATE ---
+    orderSection.innerHTML = `<div class="order-success"><h1>Thank You, ${customerNameGlobal}!</h1><p>Your order has been placed successfully.</p><div class="success-buttons"><a href="status.html?id=${orderId}" class="status-link" target="_blank">View My Order Status</a><button id="order-again-btn" class="order-again-link">Place Another Order</button></div></div>`;
+    document.getElementById('order-again-btn').addEventListener('click', () => window.location.reload());
 });
 
-// Initial Load
-displayMenu();
+
+// --- THIS IS THE FIX: The missing Start Order button listener ---
+startOrderBtn.addEventListener('click', () => {
+    customerNameGlobal = customerNameInput.value.trim();
+    if (customerNameGlobal === '') {
+        alert('Please enter your name.');
+        return;
+    }
+    displayCustomerName.textContent = customerNameGlobal;
+    welcomeSection.style.display = 'none';
+    orderSection.style.display = 'block';
+    displayMenu(); 
+});
+// --- END OF FIX ---
+
+
+// --- Initial Load ---
+listenForIngredientAvailability();
