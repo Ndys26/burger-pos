@@ -38,62 +38,90 @@ function showGameScreen(screenId) {
 }
 
 // ====================================================================
-// ===               FIX #1: GAME INITIALIZATION FIXED              ===
+// ===            GAME INITIALIZATION WITH FIXES APPLIED            ===
 // ====================================================================
 function initGame() {
     showGameScreen('game-play-screen');
-    // FIXED: Changed 'gameContainer' to 'game-play-screen', which actually exists.
-    const gamePlayScreen = document.getElementById('game-play-screen'); 
-    if (gamePlayScreen.clientWidth === 0) { 
-        setTimeout(initGame, 100); 
-        return; 
-    }
-    canvas.width = Math.floor(gamePlayScreen.clientWidth / gridSize) * gridSize;
-    canvas.height = canvas.width;
-    snake = [{ x: 8 * gridSize, y: 8 * gridSize }];
+    const gamePlayScreen = document.getElementById('game-play-screen');
+    
+    // === FIX #1: RESPONSIVE CANVAS SIZING ===
+    const containerWidth = gamePlayScreen.clientWidth;
+    const maxCanvasSize = 400; // Prevent the game from being excessively large on desktop
+    let canvasSize = Math.min(containerWidth, maxCanvasSize);
+    canvasSize = Math.floor(canvasSize / gridSize) * gridSize; // Snap to grid
+    canvas.width = canvasSize;
+    canvas.height = canvasSize;
+    
+    // Start snake in the center of the new canvas size
+    snake = [{ x: Math.floor(canvas.width / 2 / gridSize) * gridSize, y: Math.floor(canvas.height / 2 / gridSize) * gridSize }];
     direction = { x: 0, y: 0 };
     score = 0;
-    gameSpeed = 150;
+
+    // === FIX #2: SLOWER STARTING SPEED ===
+    gameSpeed = 200; // Higher number = slower start (was 150)
+    
     isGameOver = false;
-    isGameActive = false;
+    isGameActive = false; // Prevents snake from moving immediately
     scoreDisplay.textContent = `Score: 0`;
+    
     placeBurger();
     drawGame();
+    
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(updateGame, gameSpeed);
 }
-// ====================================================================
 
 function placeBurger() { burger = { x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize, y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize }; }
+
 function updateGame() {
+    // The game only moves if isGameActive is true
     if (isGameOver || !isGameActive) return;
+    
     const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
     if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) { endGame(); return; }
     for (let i = 1; i < snake.length; i++) { if (head.x === snake[i].x && head.y === snake[i].y) { endGame(); return; } }
+    
     snake.unshift(head);
+    
     if (head.x === burger.x && head.y === burger.y) {
         score++;
         scoreDisplay.textContent = `Score: ${score}`;
         placeBurger();
-        if (gameSpeed > 60) { gameSpeed -= 5; clearInterval(gameLoop); gameLoop = setInterval(updateGame, gameSpeed); }
-    } else { snake.pop(); }
+        
+        // === FIX #3: MORE BALANCED SPEED INCREASE ===
+        if (gameSpeed > 80) { // Set a reasonable maximum speed
+            gameSpeed -= 2; // Speed up more gradually (was 5)
+            clearInterval(gameLoop);
+            gameLoop = setInterval(updateGame, gameSpeed);
+        }
+    } else {
+        snake.pop();
+    }
+    
     drawGame();
 }
+
 function drawGame() {
     ctx.fillStyle = '#f0f0f0'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#28a745'; snake.forEach(segment => ctx.fillRect(segment.x, segment.y, gridSize, gridSize));
-    ctx.fillStyle = '#dc3545'; ctx.fillRect(burger.x, burger.y, gridSize, gridSize);
+    // Draw slightly smaller squares for a grid effect
+    ctx.fillStyle = '#28a745'; snake.forEach(segment => ctx.fillRect(segment.x, segment.y, gridSize - 2, gridSize - 2));
+    ctx.fillStyle = '#dc3545'; ctx.fillRect(burger.x, burger.y, gridSize - 2, gridSize - 2);
 }
+
 function endGame() {
     isGameOver = true;
+    isGameActive = false; // Stop the game state
     clearInterval(gameLoop);
     finalScoreValue.textContent = score;
     showGameScreen('game-over-screen');
     checkIfHighScore(score);
 }
 
+// Keyboard listener starts the game on first valid move
 window.addEventListener('keydown', e => {
-    if (!isGameActive && document.getElementById('game-play-screen').classList.contains('active')) isGameActive = true;
+    if (!isGameActive && e.key.startsWith('Arrow')) {
+        isGameActive = true;
+    }
     switch (e.key) {
         case 'ArrowUp': if (direction.y === 0) direction = { x: 0, y: -gridSize }; break;
         case 'ArrowDown': if (direction.y === 0) direction = { x: 0, y: gridSize }; break;
@@ -101,13 +129,23 @@ window.addEventListener('keydown', e => {
         case 'ArrowRight': if (direction.x === 0) direction = { x: gridSize, y: 0 }; break;
     }
 });
+
+// Touch listener starts the game on first swipe
 let touchStartX = 0, touchStartY = 0;
 canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }, { passive: true });
 canvas.addEventListener('touchend', e => {
-    if (!isGameActive) isGameActive = true;
-    const dx = e.changedTouches[0].clientX - touchStartX; const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy)) { if (dx > 0 && direction.x === 0) direction = { x: gridSize, y: 0 }; else if (dx < 0 && direction.x === 0) direction = { x: -gridSize, y: 0 }; } 
-    else { if (dy > 0 && direction.y === 0) direction = { x: 0, y: gridSize }; else if (dy < 0 && direction.y === 0) direction = { x: 0, y: -gridSize }; }
+    if (!isGameActive) {
+        isGameActive = true;
+    }
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) { // Horizontal swipe
+        if (dx > 0 && direction.x === 0) direction = { x: gridSize, y: 0 };     // Right
+        else if (dx < 0 && direction.x === 0) direction = { x: -gridSize, y: 0 }; // Left
+    } else { // Vertical swipe
+        if (dy > 0 && direction.y === 0) direction = { x: 0, y: gridSize };      // Down
+        else if (dy < 0 && direction.y === 0) direction = { x: 0, y: -gridSize }; // Up
+    }
 }, { passive: true });
 
 startGameBtn.addEventListener('click', initGame);
@@ -154,16 +192,11 @@ function submitHighScore(newEntry, ref) {
     });
 }
 
-// ====================================================================
-// ===              FIX #2: STAR RATING "GLOW" FIXED                ===
-// ====================================================================
 function initRatingSystem(orderRef) {
     starsContainer.addEventListener('click', e => {
         if (e.target.classList.contains('star')) {
             const ratingValue = e.target.dataset.value;
             starsContainer.dataset.rating = ratingValue;
-            // FIXED: Instead of changing the star character, we add/remove a CSS class.
-            // This allows the CSS to control the "glow" color.
             document.querySelectorAll('.star').forEach(star => {
                 star.classList.toggle('selected', star.dataset.value <= ratingValue);
             });
@@ -172,14 +205,18 @@ function initRatingSystem(orderRef) {
     submitReviewBtn.addEventListener('click', () => {
         const rating = parseInt(starsContainer.dataset.rating, 10);
         const comment = document.getElementById('review-comment').value.trim();
-        if (rating === 0) { alert('Please select a star rating.'); return; }
+        // Check if rating is a number and greater than 0
+        if (!rating || rating === 0) { 
+            alert('Please select a star rating.'); 
+            return; 
+        }
         const reviewData = { rating, comment, submittedAt: Date.now() };
         orderRef.child('review').set(reviewData).then(() => {
             ratingContainer.classList.add('hidden'); thankYouContainer.classList.remove('hidden');
         }).catch(error => console.error("Error submitting review:", error));
     });
 }
-// ====================================================================
+
 
 // --- MAIN ORDER STATUS LOGIC ---
 function getOrderIdFromUrl() {
@@ -196,7 +233,8 @@ else {
         orderIdDisplay.textContent = `Order #${order.orderNumber || orderId.slice(-6).toUpperCase()}`;
         greetingElement.textContent = `Hi, ${order.customerName}!`;
         const currentStatus = order.status || 'pending';
-        statusElement.textContent = currentStatus; statusElement.className = `status-${currentStatus}`;
+        // Make sure class is lowercase to match CSS
+        statusElement.textContent = currentStatus; statusElement.className = `status-${currentStatus.toLowerCase()}`;
         itemsList.innerHTML = '';
         for (const key in order.items) {
             const item = order.items[key]; const li = document.createElement('li');
