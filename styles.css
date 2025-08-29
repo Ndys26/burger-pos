@@ -1,4 +1,4 @@
-/* ---- GLOBAL STYLES ---- */
+ /* ---- GLOBAL STYLES ---- */
 :root {
     --primary-color: #ff8c00; 
     --pending-color: #007bff; 
@@ -1713,4 +1713,63 @@ input:checked + .slider:before {
     font-size: 1.05em;
     font-weight: 500;
     color: #333;
+}
+/* ========================================= */
+/* === RESPONSIVE FIX FOR MOBILE DASHBOARD === */
+/* ========================================= */
+
+/* This code will only apply when the screen width is 768px or less */
+@media (max-width: 768px) {
+    .dashboard-container {
+        /* Change the layout from side-by-side to top-to-bottom */
+        flex-direction: column;
+    }
+
+    .sidebar {
+        /* Make the sidebar take the full width and a fixed height */
+        width: 100%;
+        height: auto;
+        border-right: none; /* Remove the side border */
+        border-bottom: 1px solid #e0e0e0; /* Add a bottom border instead */
+    }
+    
+    .sidebar-nav {
+        /* Allow navigation links to scroll horizontally if they don't fit */
+        display: flex;
+        flex-direction: row; /* Arrange items in a row */
+        overflow-x: auto; /* Allow horizontal scrolling */
+        padding-bottom: 10px;
+    }
+    
+    .sidebar-nav a.nav-link {
+       flex-shrink: 0; /* Prevent links from shrinking */
+       margin-bottom: 0;
+       margin-right: 10px;
+    }
+    
+    .sidebar-header {
+        text-align: center;
+        margin-bottom: 15px;
+    }
+
+    .main-content {
+        /* Adjust padding for a better mobile view */
+        padding: 20px 15px;
+    }
+    
+    .main-header {
+        /* Stack the header items on mobile */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .main-header h1 {
+        font-size: 1.8em;
+    }
+    
+    /* Make the data grid stack into a single column on mobile */
+    .data-grid {
+        grid-template-columns: 1fr;
+    }
 }
