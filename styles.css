@@ -124,6 +124,10 @@ h1, h2 {
     text-align: center;
 }
 
+.menu-gallery img {
+    max-width: 100%; /* Ensures the image is never wider than its container */
+    height: auto;    /* Maintains the correct aspect ratio */
+}
 .section-title {
     font-family: 'Poppins', sans-serif;
     font-size: 2.5rem;
