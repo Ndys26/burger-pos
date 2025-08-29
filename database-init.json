@@ -1,8 +1,45 @@
 {
+  "counters": {
+    "orderNumber": 0
+  },
+  "galleryItems": {
+    "photo01": {
+      "description": "Classic Burger",
+      "imageUrl": "https://i.ibb.co/KpKpxbtR/Whats-App-Image-2025-07-10-at-12-26-24-AM-2.jpg"
+    },
+    "photo02": {
+      "description": "Maggi Burger",
+      "imageUrl": "https://i.ibb.co/rN4fjw4/Whats-App-Image-2025-07-13-at-7-17-30-PM.jpg"
+    }
+  },
   "ingredients": {
+    "egg": {
+      "isAvailable": true,
+      "name": "Telur"
+    },
     "cheese": {
-      "name": "Cheese",
-      "isAvailable": true
+      "isAvailable": true,
+      "name": "Cheese Slice"
+    },
+    "lettuce": {
+      "isAvailable": true,
+      "name": "Salad / Lettuce"
+    },
+    "tomato": {
+      "isAvailable": true,
+      "name": "Tomato"
+    },
+    "cucumber": {
+      "isAvailable": true,
+      "name": "Cucumber"
+    },
+    "caramelized_onion": {
+      "isAvailable": true,
+      "name": "Caramelized Onion"
+    },
+    "fishball": {
+      "isAvailable": true,
+      "name": "Bebola Ikan"
     }
   },
   "products": {
@@ -17,20 +54,20 @@
         "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
       },
       "variants": {
-        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 4.00, "isAvailable": true },
-        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 5.00, "isAvailable": true },
-        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 5.50, "isAvailable": true },
-        "ayamDoubleSpecial": { "type": "Ayam", "style": "Double Special", "price": 6.50, "isAvailable": true },
-        "ayamTriple": { "type": "Ayam", "style": "Triple", "price": 7.00, "isAvailable": true },
-        "ayamTripleSpecial": { "type": "Ayam", "style": "Triple Special", "price": 8.00, "isAvailable": true },
-        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 4.00, "isAvailable": true },
-        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 5.00, "isAvailable": true },
-        "dagingDouble": { "type": "Daging", "style": "Double", "price": 5.50, "isAvailable": true },
-        "dagingDoubleSpecial": { "type": "Daging", "style": "Double Special", "price": 6.50, "isAvailable": true },
-        "dagingTriple": { "type": "Daging", "style": "Triple", "price": 7.00, "isAvailable": true },
-        "dagingTripleSpecial": { "type": "Daging", "style": "Triple Special", "price": 8.00, "isAvailable": true },
-        "kahwin": { "style": "Kahwin", "price": 5.50, "isAvailable": true },
-        "kahwinSpecial": { "style": "Kahwin Special", "price": 6.50, "isAvailable": true }
+        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 4.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 5.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 5.50, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamDoubleSpecial": { "type": "Ayam", "style": "Double Special", "price": 6.50, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamTriple": { "type": "Ayam", "style": "Triple", "price": 7.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamTripleSpecial": { "type": "Ayam", "style": "Triple Special", "price": 8.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 4.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 5.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingDouble": { "type": "Daging", "style": "Double", "price": 5.50, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingDoubleSpecial": { "type": "Daging", "style": "Double Special", "price": 6.50, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingTriple": { "type": "Daging", "style": "Triple", "price": 7.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingTripleSpecial": { "type": "Daging", "style": "Triple Special", "price": 8.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "kahwin": { "style": "Kahwin", "price": 5.50, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "kahwinSpecial": { "style": "Kahwin Special", "price": 6.50, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} }
       }
     },
     "burgerBenjo": {
@@ -44,9 +81,9 @@
             "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
         },
         "variants": {
-            "biasa": { "style": "Biasa", "price": 3.00, "isAvailable": true },
-            "special": { "style": "Special", "price": 4.00, "isAvailable": true },
-            "double": { "style": "Double", "price": 4.00, "isAvailable": true }
+            "biasa": { "style": "Biasa", "price": 3.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+            "special": { "style": "Special", "price": 4.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+            "double": { "style": "Double", "price": 4.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} }
         }
     },
     "maggiDagingBurger": {
@@ -59,12 +96,12 @@
       ],
       "variants": {
         "kosong": { "style": "Kosong", "price": 2.50, "isAvailable": true },
-        "telur": { "style": "Telur", "price": 4.00, "isAvailable": true },
-        "biasaPattyAyam": { "style": "Biasa", "type": "Patty Ayam", "price": 6.00, "isAvailable": true },
-        "biasaPattyDaging": { "style": "Biasa", "type": "Patty Daging", "price": 6.00, "isAvailable": true },
-        "biasaOblongAyam": { "style": "Biasa", "type": "Oblong Ayam", "price": 8.00, "isAvailable": true },
-        "biasaOblongDaging": { "style": "Biasa", "type": "Oblong Daging", "price": 8.00, "isAvailable": true },
-        "biasaOblongKambing": { "style": "Biasa", "type": "Oblong Kambing", "price": 10.00, "isAvailable": true }
+        "telur": { "style": "Telur", "price": 4.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} },
+        "biasaPattyAyam": { "style": "Biasa", "type": "Patty Ayam", "price": 6.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} },
+        "biasaPattyDaging": { "style": "Biasa", "type": "Patty Daging", "price": 6.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} },
+        "biasaOblongAyam": { "style": "Biasa", "type": "Oblong Ayam", "price": 8.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} },
+        "biasaOblongDaging": { "style": "Biasa", "type": "Oblong Daging", "price": 8.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} },
+        "biasaOblongKambing": { "style": "Biasa", "type": "Oblong Kambing", "price": 10.00, "isAvailable": true, "requiredIngredients": {"egg": true, "fishball": true} }
       }
     },
     "oblong": {
@@ -78,16 +115,23 @@
         "Sos": [ { "id": "tnsos", "name": "Tak nak sos (semua)" }, { "id": "tncili", "name": "Tak nak sos cili" }, { "id": "tnblackpepper", "name": "Tak nak sos black pepper" }, { "id": "tnmayonis", "name": "Tak nak mayonis" } ]
       },
       "variants": {
-        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 6.00, "isAvailable": true },
-        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 7.00, "isAvailable": true },
-        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 8.00, "isAvailable": true },
-        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 6.00, "isAvailable": true },
-        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 7.00, "isAvailable": true },
-        "dagingDouble": { "type": "Daging", "style": "Double", "price": 8.00, "isAvailable": true },
-        "kambingBiasa": { "type": "Kambing", "style": "Biasa", "price": 8.00, "isAvailable": true },
-        "kambingSpecial": { "type": "Kambing", "style": "Special", "price": 9.00, "isAvailable": true },
-        "kambingDouble": { "type": "Kambing", "style": "Double", "price": 10.00, "isAvailable": true }
+        "ayamBiasa": { "type": "Ayam", "style": "Biasa", "price": 6.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamSpecial": { "type": "Ayam", "style": "Special", "price": 7.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "ayamDouble": { "type": "Ayam", "style": "Double", "price": 8.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingBiasa": { "type": "Daging", "style": "Biasa", "price": 6.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingSpecial": { "type": "Daging", "style": "Special", "price": 7.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "dagingDouble": { "type": "Daging", "style": "Double", "price": 8.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "kambingBiasa": { "type": "Kambing", "style": "Biasa", "price": 8.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "kambingSpecial": { "type": "Kambing", "style": "Special", "price": 9.00, "isAvailable": true, "requiredIngredients": {"egg": true, "cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} },
+        "kambingDouble": { "type": "Kambing", "style": "Double", "price": 10.00, "isAvailable": true, "requiredIngredients": {"cucumber": true, "caramelized_onion": true, "lettuce": true, "tomato": true} }
       }
     }
+  },
+  "settings": {
+    "operatingHours": {
+      "startTime": "18:30",
+      "endTime": "23:00"
+    },
+    "pickupInterval": 15
   }
 }

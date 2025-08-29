@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <a href="admin.html" style="display: block; margin-bottom: 20px; font-size: 1.1em;">&larr; Back to Admin Dashboard</a>
+        <hr>
+
+        <div class="management-columns">
+            <div class="column">
+                <h1>Product Stock & Sales</h1>
+                <div id="sales-container"></div>
+            </div>
+            <div class="column">
+                <h1>Ingredient Stock</h1>
+                <div id="ingredients-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <!-- We will create this stock.js file in the next step -->
+    <script src="stock.js"></script>
+</body>
+</html>

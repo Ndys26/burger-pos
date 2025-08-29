@@ -13,254 +13,381 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 // --- DOM Elements ---
-const ordersContainer = document.getElementById('orders-container');
-const readyOrdersContainer = document.getElementById('ready-orders-container');
-const salesContainer = document.getElementById('sales-container');
-const ingredientsContainer = document.getElementById('ingredients-container');
-const resetSalesBtn = document.getElementById('reset-sales-btn');
+const pendingOrdersContainer = document.getElementById('pending-orders');
+const preparingOrdersContainer = document.getElementById('preparing-orders');
+const readyOrdersContainer = document.getElementById('ready-orders');
+
+const incomingCountEl = document.getElementById('incoming-count');
+const preparingCountEl = document.getElementById('preparing-count');
+const readyCountEl = document.getElementById('ready-count');
+
+const resetDayBtn = document.getElementById('reset-sales-btn');
 const historyBtn = document.getElementById('view-history-btn');
 const historyModal = document.getElementById('history-modal');
 const closeBtn = document.querySelector('.close-btn');
-const historyOrdersContainer = document.getElementById('history-orders-container');
+const historyOrdersContainer = document.getElementById('history-orders-container'); // Container for history items
 const notificationSound = document.getElementById('notification-sound');
 const soundActivationOverlay = document.getElementById('sound-activation-overlay');
 const totalRevenueEl = document.getElementById('total-revenue');
 const totalItemsSoldEl = document.getElementById('total-items-sold');
 const bestSellerEl = document.getElementById('best-seller');
 
+// --- NEW Elements for Sales Target Feature ---
+const salesTargetDisplay = document.getElementById('sales-target-display');
+const salesProgressBar = document.getElementById('sales-progress-bar');
+
+
 // --- State Variables ---
 let knownOrderKeys = new Set();
 let isAudioEnabled = false;
 
-// --- Sound Activation ---
-function enableAudio() {
-    if (!isAudioEnabled) {
-        notificationSound.play().then(() => {
-            notificationSound.pause(); isAudioEnabled = true; if (soundActivationOverlay) soundActivationOverlay.style.display = 'none';
-        }).catch(e => console.error("Audio failed to play.", e));
-    }
-}
-if (soundActivationOverlay) { soundActivationOverlay.addEventListener('click', enableAudio, { once: true }); }
-
-// --- Helper for Smart Grouping ---
-function groupOrderItems(items) {
-    const grouped = {};
-    Object.values(items).forEach(item => {
-        const uniqueId = item.displayName + (item.customizations || []).sort().join(',');
-        if (grouped[uniqueId]) { grouped[uniqueId].quantity += item.quantity; }
-        else { grouped[uniqueId] = { ...item }; }
+// --- SMART INVENTORY DEDUCTION (Called on Accept) ---
+function deductInventoryFromOrder(orderKey) {
+    console.log("SMART DEDUCTION: Deducting inventory for ACCEPTED order:", orderKey);
+    database.ref().once('value', snapshot => {
+        const data = snapshot.val();
+        if (!data.orders || !data.products || !data.inventory) { console.error("Missing critical data for deduction."); return; }
+        const order = data.orders[orderKey];
+        const productsData = data.products;
+        const inventoryRef = database.ref('inventory');
+        if (!order || !order.items) { console.error("Order or items not found for key:", orderKey); return; }
+        for (const itemKey in order.items) {
+            const orderItem = order.items[itemKey];
+            const product = productsData[orderItem.productKey];
+            if (product && product.variants && product.variants[orderItem.variantKey]) {
+                const variant = product.variants[orderItem.variantKey];
+                if (variant.recipe) {
+                    for (const ingredientId in variant.recipe) {
+                        const quantityToDeduct = variant.recipe[ingredientId] * orderItem.quantity;
+                        inventoryRef.child(ingredientId).child('stock').transaction(currentStock => (currentStock || 0) - quantityToDeduct);
+                    }
+                }
+            }
+        }
     });
-    return Object.values(grouped);
 }
 
-// --- Main Display Function ---
+// --- TIMER LOGIC ---
+function updateAllTimers() {
+    const timerElements = document.querySelectorAll('.order-timer');
+    timerElements.forEach(timerEl => {
+        const timestamp = parseInt(timerEl.dataset.timestamp, 10);
+        const limitInSeconds = parseInt(timerEl.dataset.limit, 10);
+        const card = timerEl.closest('.order-card');
+        if (!timestamp || !card) return;
+        const elapsedSeconds = Math.floor((Date.now() - timestamp) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+        const seconds = (elapsedSeconds % 60).toString().padStart(2, '0');
+        timerEl.textContent = `${minutes}:${seconds}`;
+        if (elapsedSeconds > limitInSeconds && !card.classList.contains('overdue')) {
+            card.classList.add('overdue');
+        }
+    });
+}
+
+// --- Helper Functions ---
+function getKitchenName(fullName) { if (!fullName) return ''; let lowerCaseName = fullName.toLowerCase(); if (lowerCaseName.includes('burger ramly biasa ayam')) return 'Burger Ayam'; if (lowerCaseName.includes('maggi daging burger biasa oblong ayam')) return 'Maggi Oblong Ayam'; if (lowerCaseName.includes('maggi daging burger biasa patty ayam')) return 'Maggi Ayam'; if (lowerCaseName.includes('burger benjo biasa')) return 'Burger Benjo'; let simpleName = fullName.replace(/Burger Ramly/gi, 'Burger').replace(/Maggi Daging Burger/gi, 'Maggi').replace(/Biasa/gi, '').replace(/Patty/gi, '').replace(/  +/g, ' '); return simpleName.trim(); }
+function enableAudio() { if (!isAudioEnabled) { notificationSound.play().then(() => { notificationSound.pause(); isAudioEnabled = true; if (soundActivationOverlay) soundActivationOverlay.style.display = 'none'; }).catch(e => console.error("Audio failed to play.", e)); } }
+if (soundActivationOverlay) { soundActivationOverlay.addEventListener('click', enableAudio, { once: true }); }
+function groupOrderItems(items) { const grouped = {}; Object.values(items).forEach(item => { const uniqueId = item.displayName + (item.customizations || []).sort().join(','); if (grouped[uniqueId]) { grouped[uniqueId].quantity += item.quantity; } else { grouped[uniqueId] = { ...item }; } }); return Object.values(grouped); }
+
+// --- MAIN DISPLAY FUNCTION ---
 function displayOrdersAndSales() {
     const ordersRef = database.ref('orders').orderByChild('timestamp');
     ordersRef.on('value', snapshot => {
         const ordersData = snapshot.val() || {};
-        ordersContainer.innerHTML = '';
-        readyOrdersContainer.innerHTML = '';
-        
         const currentOrderKeys = new Set(Object.keys(ordersData));
         if (knownOrderKeys.size > 0) {
-            const newKeys = [...currentOrderKeys].filter(key => !knownOrderKeys.has(key) && ordersData[key].status !== 'completed');
+            const newKeys = [...currentOrderKeys].filter(key => !knownOrderKeys.has(key) && ordersData[key].status === 'pending');
             if (newKeys.length > 0 && isAudioEnabled) { notificationSound.play().catch(e => {}); }
         }
         knownOrderKeys = currentOrderKeys;
-
-        // --- Sales Calculation ---
-        let totalRevenue = 0, totalItemsSold = 0, itemCounts = {};
-        const todayStart = new Date().setHours(0, 0, 0, 0);
-
-        Object.values(ordersData).forEach(order => {
-            if (order.status === 'completed' && order.completedAt >= todayStart) {
-                totalRevenue += order.total;
-                Object.values(order.items).forEach(item => {
-                    totalItemsSold += item.quantity;
-                    itemCounts[item.displayName] = (itemCounts[item.displayName] || 0) + item.quantity;
-                });
-            }
-        });
-
-        // --- Update Summary UI ---
-        let bestSellerName = 'N/A', bestSellerCount = 0;
-        for (const name in itemCounts) { if (itemCounts[name] > bestSellerCount) { bestSellerCount = itemCounts[name]; bestSellerName = name; } }
-        totalRevenueEl.textContent = `RM ${totalRevenue.toFixed(2)}`;
-        totalItemsSoldEl.textContent = totalItemsSold;
-        bestSellerEl.textContent = bestSellerName === 'N/A' ? 'N/A' : `${bestSellerName} (${bestSellerCount} sold)`;
         
-        // --- Active Orders Rendering ---
-        const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
-        const activeOrders = Object.entries(ordersData).filter(([,o])=> o.status !== 'completed' || o.completedAt > tenMinutesAgo);
-        let orderCounter = 1, incomingCount = 0, readyCount = 0;
+        pendingOrdersContainer.innerHTML = '';
+        preparingOrdersContainer.innerHTML = '';
+        readyOrdersContainer.innerHTML = '';
 
-        activeOrders.forEach(([key, order]) => {
-            const orderCard = document.createElement('div');
-            orderCard.className = `order-card ${order.status || 'pending'}`;
-            const orderNumber = `#${orderCounter}`;
-
-            const groupedItems = groupOrderItems(order.items);
-            let itemsHtml = '<ul>';
-            
-            // --- THIS IS THE FINAL HTML FIX FOR ALIGNMENT ---
-            groupedItems.forEach(item => {
-                itemsHtml += `
-                    <li>
-                        <div class="item-line">
-                            <span class="item-name">${item.displayName}</span>
-                            <span class="item-quantity">x${item.quantity}</span>
-                        </div>
-                `;
-                if (item.customizations && item.customizations.length > 0) {
-                    itemsHtml += `<ul class="customizations-list-admin"><li>- ${item.customizations.join('</li><li>- ')}</li></ul>`;
-                }
-                itemsHtml += '</li>';
-            });
-            // --- END OF FIX ---
-            itemsHtml += '</ul>';
-
-            let actionButtonHtml = '';
-            if (order.status === 'ready' || order.status === 'completed') { actionButtonHtml = `<button class="mark-complete-btn" data-key="${key}">DONE</button>`; }
-            else if (order.status === 'pending') { actionButtonHtml = `<button class="status-btn preparing-btn" data-key="${key}" data-status="preparing">Start Preparing</button>`; }
-            else if (order.status === 'preparing') { actionButtonHtml = `<button class="status-btn ready-btn" data-key="${key}" data-status="ready">Order Ready</button>`; }
-            
-            orderCard.innerHTML = `
-                <div class="order-header"><h3>${order.customerName} - ${new Date(order.timestamp).toLocaleTimeString()}</h3><span class="order-id-admin">${orderNumber}</span></div>
-                <div class="order-body">${itemsHtml}</div>
-                <div class="order-footer"><span class="total">RM ${order.total.toFixed(2)}</span>${actionButtonHtml}</div>`;
-            
-            if (order.status === 'ready' || order.status === 'completed') {
+        let incomingCount = 0, preparingCount = 0, readyCount = 0;
+        const allOrdersArray = Object.entries(ordersData);
+        
+        allOrdersArray.forEach(([key, order]) => {
+            const orderCard = createOrderCard(key, order);
+            if (order.status === 'pending') {
+                pendingOrdersContainer.appendChild(orderCard);
+                incomingCount++;
+            } else if (order.status === 'preparing') {
+                preparingOrdersContainer.appendChild(orderCard);
+                preparingCount++;
+            } else if (order.status === 'ready') {
                 readyOrdersContainer.appendChild(orderCard);
                 readyCount++;
-            } else {
-                ordersContainer.appendChild(orderCard);
-                incomingCount++;
             }
-            orderCounter++;
         });
 
-        if (incomingCount === 0 && (readyCount > 0 || activeOrders.length === 0) ) { ordersContainer.innerHTML = '<p>No new incoming orders.</p>'; }
-        document.getElementById('ready-section-header').style.display = readyCount > 0 ? 'block' : 'none';
+        if(incomingCountEl) incomingCountEl.textContent = incomingCount;
+        if(preparingCountEl) preparingCountEl.textContent = preparingCount;
+        if(readyCountEl) readyCountEl.textContent = readyCount;
+
+        if (incomingCount === 0) pendingOrdersContainer.innerHTML = '<p class="no-orders-message">No new incoming orders.</p>';
+        if (preparingCount === 0) preparingOrdersContainer.innerHTML = '<p class="no-orders-message">No orders in preparation.</p>';
+        if (readyCount === 0) readyOrdersContainer.innerHTML = '<p class="no-orders-message">No orders are ready for pickup.</p>';
+        
+        updateSalesSummary(ordersData);
     });
 }
 
-function displayManagement() {
-    database.ref('products').on('value', snapshot => {
-        salesContainer.innerHTML = '';
-        const products = snapshot.val();
-        if(!products) return;
-        const productsArray = Object.keys(products).map(key => ({...products[key], key: key }));
-        productsArray.sort((a,b) => (a.displayOrder || 99) - (b.displayOrder || 99));
-
-        productsArray.forEach(product => {
-            salesContainer.innerHTML += `<h4>${product.name}</h4>`;
-            Object.entries(product.variants).forEach(([variantKey, variant]) => {
-                const displayName = [variant.style, variant.type].filter(Boolean).join(' ') || variantKey;
-                salesContainer.innerHTML += `<div class="stock-item">
-                    <span class="stock-name">${displayName}: ${variant.soldToday || 0} sold</span>
-                    <label class="toggle-switch"><input class="stock-toggle" type="checkbox" data-path="products/${product.key}/variants/${variantKey}/isAvailable" ${variant.isAvailable ? 'checked' : ''}><span class="slider"></span></label>
-                </div>`;
-            });
-        });
+// --- CARD BUILDER ---
+function createOrderCard(key, order) {
+    const orderCard = document.createElement('div');
+    orderCard.className = `order-card ${order.status || 'pending'}`;
+    
+    const groupedItems = groupOrderItems(order.items);
+    let itemsHtml = '<ul>';
+    groupedItems.forEach(item => {
+        itemsHtml += `<li><div class="item-line"><span class="item-name">${getKitchenName(item.displayName)}</span><span class="item-quantity">x${item.quantity}</span></div>`;
+        if (item.customizations && item.customizations.length > 0) {
+            let customizationsHtml = item.customizations.map(c => `<li>- ${c}</li>`).join('');
+            itemsHtml += `<ul class="customizations-list-admin">${customizationsHtml}</ul>`;
+        }
+        itemsHtml += '</li>';
     });
+    itemsHtml += '</ul>';
 
-    database.ref('ingredients').on('value', snapshot => {
-        ingredientsContainer.innerHTML = '';
-        const ingredients = snapshot.val();
-        if(!ingredients) { ingredientsContainer.innerHTML = 'Add ingredients to database.'; return; }
-        Object.entries(ingredients).forEach(([key, ing]) => {
-            ingredientsContainer.innerHTML += `<div class="stock-item">
-                <span class="stock-name">${ing.name}</span>
-                <label class="toggle-switch"><input class="stock-toggle" type="checkbox" data-path="ingredients/${key}/isAvailable" ${ing.isAvailable ? 'checked' : ''}><span class="slider"></span></label>
-            </div>`;
-        });
-    });
+    let actionButtonsHtml = '';
+    if (order.status === 'pending') {
+        actionButtonsHtml = `
+            <button class="action-btn decline-btn" data-key="${key}">Decline</button>
+            <button class="action-btn accept-btn" data-key="${key}">Accept</button>
+        `;
+    } else if (order.status === 'preparing') {
+        actionButtonsHtml = `<button class="action-btn ready-btn" data-key="${key}">Order Ready</button>`;
+    } else if (order.status === 'ready') {
+        actionButtonsHtml = `<button class="action-btn complete-btn" data-key="${key}">Picked Up</button>`;
+    }
+
+    const simpleTime = new Date(order.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    
+    let pickupHtml = '';
+    if (order.pickupTime) {
+        const isNow = order.pickupTime === 'Pick Up Now';
+        pickupHtml = `<div class="pickup-info"><span class="pickup-badge ${isNow ? 'now' : 'scheduled'}">${isNow ? 'Pick Up Now' : order.pickupTime}</span></div>`;
+    }
+
+    let timerHtml = '';
+    if (order.status === 'pending' || order.status === 'preparing') {
+        const hasMaggi = Object.values(order.items).some(item => item.displayName && item.displayName.toLowerCase().includes('maggi'));
+        const timeLimit = hasMaggi ? 360 : 300;
+        timerHtml = `<div class="order-timer" data-timestamp="${order.timestamp}" data-limit="${timeLimit}">00:00</div>`;
+    }
+    
+    orderCard.innerHTML = `
+        <div class="order-header">
+            <h3>${order.customerName} - ${simpleTime}</h3>
+            <div class="header-right">
+                ${timerHtml}
+                <span class="order-id-admin">#${order.orderNumber || ''}</span>
+            </div>
+        </div>
+        ${pickupHtml}
+        <div class="order-body">${itemsHtml}</div>
+        <div class="order-footer">
+            <span class="total">RM ${order.total.toFixed(2)}</span>
+            <div class="action-buttons">${actionButtonsHtml}</div>
+        </div>`;
+    
+    return orderCard;
 }
 
+// --- Sales Summary Calculator ---
+function updateSalesSummary(ordersData) {
+    let totalRevenue = 0;
+    let totalItemsSold = 0;
+    let itemCounts = {};
+    const todayStart = new Date().setHours(0, 0, 0, 0);
 
-// --- All Event Listeners ---
-document.body.addEventListener('click', e => {
-    // Status Buttons
-    if (e.target.matches('.status-btn')) {
-        database.ref(`orders/${e.target.dataset.key}/status`).set(e.target.dataset.status);
-    }
-    if (e.target.matches('.mark-complete-btn')) {
-        database.ref(`orders/${e.target.dataset.key}`).update({
-            status: 'completed',
-            completedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-    }
+    Object.values(ordersData).forEach(order => {
+        const isOrderToday = order.timestamp >= todayStart;
+        const isOrderActive = order.status !== 'pending' && order.status !== 'cancelled';
 
-    // Modal and History Buttons
-    if (e.target === historyBtn) {
-        database.ref('orders').orderByChild('timestamp').limitToLast(100).once('value', snapshot => {
-            historyOrdersContainer.innerHTML = '';
-            const orders = snapshot.val() || {};
-            const orderKeys = Object.keys(orders).reverse();
-            if (orderKeys.length === 0) {
-                historyOrdersContainer.innerHTML = "<li>No history found.</li>";
-            } else {
-                orderKeys.forEach(key => {
-                    const order = orders[key];
-                    const groupedItems = groupOrderItems(order.items);
-                    const itemSummary = groupedItems.map(item => {
-                        let summary = `${item.displayName} x${item.quantity}`;
-                        if (item.customizations && item.customizations.length > 0) {
-                           summary += ` <i>(${item.customizations.join(', ')})</i>`;
-                        }
-                        return summary;
-                    }).join('<br>');
-                    const li = document.createElement('li');
-                    li.className = `history-item ${order.status === 'completed' ? 'completed' : ''}`;
-                    li.innerHTML = `
-                        <div class="history-item-header">
-                            <span class="history-name">${order.customerName} - ${new Date(order.timestamp).toLocaleString()}</span>
-                            <span class="history-total">RM ${order.total.toFixed(2)}</span>
-                        </div>
-                        <div class="history-item-body">${itemSummary}</div>`;
-                    historyOrdersContainer.appendChild(li);
-                });
-            }
-            historyModal.style.display = 'block';
-        });
-    }
-
-    if (e.target === closeBtn || e.target === historyModal) {
-        historyModal.style.display = 'none';
-    }
-
-    // Reset Sales Button
-    if (e.target === resetSalesBtn) {
-        if (confirm("Are you sure? This will DELETE all completed orders, reset product sales to 0, and make everything available for the new day.")) {
-            const updates = {};
-            database.ref('orders').orderByChild('status').equalTo('completed').once('value', orderSnapshot => {
-                orderSnapshot.forEach(childSnapshot => {
-                    updates[`orders/${childSnapshot.key}`] = null;
-                });
-                database.ref().once('value', dataSnapshot => {
-                    const data = dataSnapshot.val();
-                    if(data.products) { for (const pKey in data.products) { if (data.products[pKey].variants) { for (const vKey in data.products[pKey].variants) { updates[`products/${pKey}/variants/${vKey}/soldToday`] = 0; updates[`products/${pKey}/variants/${vKey}/isAvailable`] = true; } } } }
-                    if(data.ingredients) { for (const iKey in data.ingredients) { updates[`ingredients/${iKey}/isAvailable`] = true; } }
-                    database.ref().update(updates).then(() => {
-                        alert("System has been successfully reset for the new day!");
-                    }).catch(err => {
-                        console.error("Error during reset:", err);
-                        alert("An error occurred. Please check the console.");
-                    });
-                });
+        if (isOrderToday && isOrderActive) {
+            totalRevenue += order.total;
+            Object.values(order.items).forEach(item => {
+                totalItemsSold += item.quantity;
+                itemCounts[item.displayName] = (itemCounts[item.displayName] || 0) + item.quantity;
             });
         }
+    });
+
+    let bestSellerName = 'N/A';
+    let bestSellerCount = 0;
+    for (const name in itemCounts) {
+        if (itemCounts[name] > bestSellerCount) {
+            bestSellerCount = itemCounts[name];
+            bestSellerName = getKitchenName(name);
+        }
+    }
+
+    if (totalRevenueEl) totalRevenueEl.textContent = `RM ${totalRevenue.toFixed(2)}`;
+    if (totalItemsSoldEl) totalItemsSoldEl.textContent = totalItemsSold;
+    if (bestSellerEl) bestSellerEl.textContent = `${bestSellerName} (${bestSellerCount} sold)`;
+}
+
+// --- START: NEW FUNCTION FOR ORDER HISTORY ---
+function displayOrderHistory() {
+    const historyRef = database.ref('orders').orderByChild('timestamp').limitToLast(50); // Get last 50 orders
+    historyRef.once('value', snapshot => {
+        const ordersData = snapshot.val() || {};
+        
+        // Clear previous history
+        historyOrdersContainer.innerHTML = ''; 
+
+        // Firebase returns objects, we need an array to sort it from newest to oldest
+        const ordersArray = Object.entries(ordersData).map(([key, value]) => ({ key, ...value }));
+        ordersArray.reverse(); // Newest first
+
+        if (ordersArray.length === 0) {
+            historyOrdersContainer.innerHTML = '<p>No recent orders found in history.</p>';
+            return;
+        }
+
+        ordersArray.forEach(order => {
+            // Only show completed or cancelled orders in the history
+            if (order.status === 'completed' || order.status === 'cancelled') {
+                const simpleTime = new Date(order.timestamp).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
+
+                // Create a summary of items
+                const itemSummary = Object.values(order.items)
+                    .map(item => `${item.quantity}x ${getKitchenName(item.displayName)}`)
+                    .join(', ');
+
+                const historyItem = document.createElement('div');
+                historyItem.className = `history-item history-status-${order.status}`;
+                historyItem.innerHTML = `
+                    <div class="history-item-header">
+                        <span class="history-name">#${order.orderNumber} - ${order.customerName}</span>
+                        <span class="history-time">${simpleTime}</span>
+                    </div>
+                    <div class="history-item-body">
+                        <span>${itemSummary}</span>
+                        <span class="history-total">RM ${order.total.toFixed(2)}</span>
+                    </div>
+                `;
+                historyOrdersContainer.appendChild(historyItem);
+            }
+        });
+        
+         // If after filtering no orders are shown, display a message
+        if (historyOrdersContainer.innerHTML === '') {
+             historyOrdersContainer.innerHTML = '<p>No completed or cancelled orders to show yet.</p>';
+        }
+
+    });
+}
+// --- END: NEW FUNCTION FOR ORDER HISTORY ---
+
+// --- Sales Target Feature ---
+function displaySalesTargetAndProgress() {
+    const metricsRef = database.ref('daily_metrics');
+    metricsRef.on('value', snapshot => {
+        const metrics = snapshot.val();
+        const salesTarget = metrics && metrics.salesTarget ? metrics.salesTarget : 0;
+
+        if (salesTargetDisplay) {
+            salesTargetDisplay.textContent = `RM ${salesTarget.toFixed(2)}`;
+        }
+
+        database.ref('orders').once('value', orderSnapshot => {
+            const ordersData = orderSnapshot.val() || {};
+            let currentRevenue = 0;
+            const todayStart = new Date().setHours(0, 0, 0, 0);
+
+            Object.values(ordersData).forEach(order => {
+                if (order.timestamp >= todayStart && order.status !== 'pending' && order.status !== 'cancelled') {
+                    currentRevenue += order.total;
+                }
+            });
+            
+            if (salesProgressBar && salesTarget > 0) {
+                const percentage = Math.min((currentRevenue / salesTarget) * 100, 100);
+                salesProgressBar.style.width = `${percentage}%`;
+            } else if (salesProgressBar) {
+                salesProgressBar.style.width = '0%';
+            }
+        });
+    });
+}
+
+// --- Daily Reset Function ---
+function resetOrdersForNewDay() {
+    if (!confirm("Are you sure you want to clear the dashboard for a new day? This will complete all active orders.")) { return; }
+
+    const ordersRef = database.ref('orders');
+    ordersRef.once('value', snapshot => {
+        const allOrders = snapshot.val();
+        if (!allOrders) { alert("No orders to reset."); return; }
+
+        const updates = {};
+        let ordersToClearCount = 0;
+        const activeStatuses = ['pending', 'preparing', 'ready'];
+
+        for (const orderKey in allOrders) {
+            const order = allOrders[orderKey];
+            if (activeStatuses.includes(order.status)) {
+                updates[`/${orderKey}/status`] = 'completed';
+                updates[`/${orderKey}/completedAt`] = firebase.database.ServerValue.TIMESTAMP;
+                ordersToClearCount++;
+            }
+        }
+
+        if (ordersToClearCount > 0) {
+            ordersRef.update(updates)
+                .then(() => alert(`Successfully cleared ${ordersToClearCount} active order(s).`))
+                .catch(error => console.error("Error clearing old orders: ", error));
+        } else {
+            alert("No active orders needed to be cleared.");
+        }
+    });
+}
+
+// --- Event Listeners for Order Actions ---
+document.body.addEventListener('click', e => {
+    const target = e.target;
+    if (!target.classList.contains('action-btn') || !target.dataset.key) { return; }
+    
+    const orderKey = target.dataset.key;
+
+    if (target.matches('.accept-btn')) { 
+        deductInventoryFromOrder(orderKey); 
+        database.ref(`orders/${orderKey}/status`).set('preparing'); 
+    }
+    if (target.matches('.decline-btn')) { 
+        if (confirm("Are you sure you want to DECLINE this order?")) { 
+            database.ref(`orders/${orderKey}/status`).set('cancelled'); 
+        } 
+    }
+    if (target.matches('.ready-btn')) { 
+        database.ref(`orders/${orderKey}/status`).set('ready'); 
+    }
+    if (target.matches('.complete-btn')) { 
+        database.ref(`orders/${orderKey}`).update({ status: 'completed', completedAt: firebase.database.ServerValue.TIMESTAMP }); 
     }
 });
 
-document.body.addEventListener('change', e => {
-    // All toggle switches
-    if (e.target.matches('.stock-toggle')) {
-        database.ref(e.target.dataset.path).set(e.target.checked);
-    }
-});
+// --- Other Event Listeners ---
+
+// MODIFIED: This now calls the function to load history before showing the modal
+if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+        displayOrderHistory(); // Load the data first
+        historyModal.style.display = 'block'; // Then show the modal
+    });
+}
+
+if (closeBtn) closeBtn.addEventListener('click', () => { historyModal.style.display = 'none'; });
+if (resetDayBtn) resetDayBtn.addEventListener('click', resetOrdersForNewDay);
 
 
 // --- Initial Load ---
 displayOrdersAndSales();
-displayManagement();
+displaySalesTargetAndProgress();
+setInterval(updateAllTimers, 1000);

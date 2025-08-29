@@ -3,35 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Your Burger</title>
+    <!-- Updated Title to reflect your brand -->
+    <title>Bukan Kedai Burger - UMT</title>
+
+    <!-- Google Fonts for a modern look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <!-- This section is shown first -->
-    <div id="welcome-section" class="container">
-        <h1>Welcome!</h1>
-        <p>Please enter your name to start your order.</p>
-        <input type="text" id="customer-name-input" placeholder="Enter your name here" autocomplete="name">
-        <button id="start-order-btn">Start Ordering</button>
-    </div>
+    <!-- This is the main page container -->
+    <div class="page-wrapper">
 
-    <!-- This section is hidden until a name is entered -->
-    <div id="order-section" class="container" style="display: none;">
-        <h1>Our Menu</h1>
-        <p>Ordering for: <strong id="display-customer-name"></strong></p>
-        <hr>
-        
-        <div id="menu-container"></div>
-        
-        <h2>Your Order</h2>
-        <ul id="cart-items"></ul>
-        <p>Total: RM<span id="cart-total">0.00</span></p>
+        <!-- This section is shown first, now with the new design -->
+        <div id="welcome-section">
+            <header class="hero">
+                <div class="hero-content">
+                    <h1 class="stall-name">Bukan Kedai Burger</h1>
+                    <p class="tagline">The taste you'll remember, right here at UMT.</p>
+                    
+                    <div class="welcome-box">
+                        <h2>Welcome!</h2>
+                        <p>Please enter your name to start your order.</p>
+                        <!-- Form added for better practice -->
+                        <form id="start-order-form">
+                            <!-- Your original input and button with their IDs are preserved -->
+                            <input type="text" id="customer-name-input" class="name-input" placeholder="Enter your name here" autocomplete="name" required>
+                            <button type="button" id="start-order-btn" class="start-btn">Start Ordering</button>
+                        </form>
+                    </div>
+                </div>
+            </header>
 
-        <!-- Remarks and Name input have been removed from here as requested -->
+            <!-- Your original menu gallery section is preserved but styled -->
+            <main id="menu-gallery-section" class="menu-preview">
+                <h2 class="section-title">Taste The Difference</h2>
+                <div id="photo-grid-container" class="menu-gallery">
+                    <!-- JavaScript will automatically add your photos from Firebase here into styled cards -->
+                    <!-- The new CSS will automatically style images placed here -->
+                </div>
+            </main>
+        </div>
 
-        <button id="submit-order">Place Order</button>
-    </div>
+        <!-- This section is hidden until a name is entered -->
+        <!-- All your original IDs and elements are preserved here -->
+        <div id="order-section" class="container" style="display: none;">
+            <h1>Our Menu</h1>
+            <p>Ordering for: <strong id="display-customer-name"></strong></p>
+            <hr>
+            
+            <div id="menu-container"></div>
+            
+            <h2>Your Order</h2>
+            <ul id="cart-items"></ul>
+            <p>Total: RM<span id="cart-total">0.00</span></p>
+
+            <div class="order-remark-container">
+                <h5>Order Remark:</h5>
+                <textarea id="order-remark-input" class="remark-input" placeholder="Add a note for the whole order..."></textarea>
+            </div>
+
+            <div class="pickup-time-container">
+                <h5>Pickup Time:</h5>
+                <select id="pickup-time-select" class="remark-input"></select>
+            </div>
+
+            <div id="store-status-container" class="store-status-banner" style="display: none;">
+                <p id="store-status-message">Maaf, pesanan online ditutup buat masa ini.</p>
+            </div>
+
+            <button id="submit-order">Place Order</button>
+        </div>
+
+        <!-- Your original image modal is preserved -->
+        <div id="image-modal" class="modal-overlay">
+            <span class="modal-close-btn">&times;</span>
+            <img class="modal-image-content" id="modal-img">
+        </div>
+
+        <!-- A new footer for a more professional look -->
+        <footer class="site-footer">
+            <p>&copy; 2025 Bukan Kedai Burger | Universiti Malaysia Terengganu</p>
+        </footer>
+
+    </div> <!-- End of .page-wrapper -->
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>

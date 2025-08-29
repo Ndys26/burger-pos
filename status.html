@@ -2,37 +2,63 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Your Order Status</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container status-container">
         <h1>Your Order Status</h1>
-        
-        <!-- NEW: Added element for the unique order number -->
         <h2 id="order-id-display">Loading order...</h2>
-
-        <!-- This wrapper is for the main content box -->
         <div id="status-card">
             <p id="customer-name-greeting"></p>
             <p>Your order is currently:</p>
-            
-            <!-- This DIV will now get the color class (e.g., "status-pending") -->
             <div id="order-status">Loading...</div>
-
             <h3>Order Summary:</h3>
-            <ul id="order-items">
-                <!-- Items will be loaded here by JavaScript -->
-            </ul>
+            <ul id="order-items"></ul>
             <p class="status-total" id="order-total"></p>
+            <div id="rating-container" class="hidden"><hr><h3>How was your order?</h3><div class="stars" data-rating="0"><span class="star" data-value="1">&star;</span><span class="star" data-value="2">&star;</span><span class="star" data-value="3">&star;</span><span class="star" data-value="4">&star;</span><span class="star" data-value="5">&star;</span></div><textarea id="review-comment" placeholder="Leave a comment... (optional)"></textarea><button id="submit-review-btn">Submit Review</button></div>
+            <div id="thank-you-container" class="hidden"><hr><h3>Thank you for your feedback!</h3></div>
         </div>
+
+        <!-- ================= NEW UNIFIED GAME WRAPPER ================= -->
+        <div id="game-wrapper">
+            <!-- Screen 1: Start Screen with Leaderboard -->
+            <div id="game-start-screen" class="game-screen active">
+                <h3>Burger Snake</h3>
+                <div class="leaderboard-box">
+                    <h4>High Scores</h4>
+                    <ol id="leaderboard-start-list"></ol>
+                </div>
+                <button id="start-game-btn" class="game-btn">Start Game</button>
+                <p class="game-instructions">Use Arrow Keys or Swipe to Move</p>
+            </div>
+
+            <!-- Screen 2: The Actual Game -->
+            <div id="game-play-screen" class="game-screen">
+                <div class="game-header">
+                    <div id="score-display">Score: 0</div>
+                    <div id="top-score-display">Top Score: 0</div>
+                </div>
+                <canvas id="game-canvas"></canvas>
+            </div>
+
+            <!-- Screen 3: Game Over Screen with Leaderboard -->
+            <div id="game-over-screen" class="game-screen">
+                <h3>Game Over!</h3>
+                <p class="final-score">Your Score: <span id="final-score-value">0</span></p>
+                <div class="leaderboard-box">
+                    <h4>High Scores</h4>
+                    <ol id="leaderboard-over-list"></ol>
+                </div>
+                <button id="restart-game-btn" class="game-btn">Play Again</button>
+            </div>
+        </div>
+        <!-- ========================================================== -->
     </div>
 
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
     <script src="status.js"></script>
 </body>
 </html>
-
