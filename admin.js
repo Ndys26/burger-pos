@@ -136,7 +136,7 @@ function displayOrdersAndSales() {
     });
 }
 
-// --- CARD BUILDER ---
+// --- CARD BUILDER (Corrected Version) ---
 function createOrderCard(key, order) {
     const orderCard = document.createElement('div');
     orderCard.className = `order-card ${order.status || 'pending'}`;
@@ -155,10 +155,7 @@ function createOrderCard(key, order) {
 
     let actionButtonsHtml = '';
     if (order.status === 'pending') {
-        actionButtonsHtml = `
-            <button class="action-btn decline-btn" data-key="${key}">Decline</button>
-            <button class="action-btn accept-btn" data-key="${key}">Accept</button>
-        `;
+        actionButtonsHtml = `<button class="action-btn decline-btn" data-key="${key}">Decline</button><button class="action-btn accept-btn" data-key="${key}">Accept</button>`;
     } else if (order.status === 'preparing') {
         actionButtonsHtml = `<button class="action-btn ready-btn" data-key="${key}">Order Ready</button>`;
     } else if (order.status === 'ready') {
@@ -190,6 +187,15 @@ function createOrderCard(key, order) {
         </div>
         ${pickupHtml}
         <div class="order-body">${itemsHtml}</div>
+        
+        <!-- This line checks for the remark and inserts it ONLY if it exists -->
+        ${order.remark && order.remark.trim() !== '' ? `
+            <div class="order-remark">
+                <strong>Nota Pesanan:</strong>
+                <p>${order.remark}</p>
+            </div>
+        ` : ''}
+        
         <div class="order-footer">
             <span class="total">RM ${order.total.toFixed(2)}</span>
             <div class="action-buttons">${actionButtonsHtml}</div>
@@ -238,12 +244,9 @@ function displayOrderHistory() {
     historyRef.once('value', snapshot => {
         const ordersData = snapshot.val() || {};
         
-        // Clear previous history
         historyOrdersContainer.innerHTML = ''; 
-
-        // Firebase returns objects, we need an array to sort it from newest to oldest
         const ordersArray = Object.entries(ordersData).map(([key, value]) => ({ key, ...value }));
-        ordersArray.reverse(); // Newest first
+        ordersArray.reverse();
 
         if (ordersArray.length === 0) {
             historyOrdersContainer.innerHTML = '<p>No recent orders found in history.</p>';
@@ -251,11 +254,8 @@ function displayOrderHistory() {
         }
 
         ordersArray.forEach(order => {
-            // Only show completed or cancelled orders in the history
             if (order.status === 'completed' || order.status === 'cancelled') {
                 const simpleTime = new Date(order.timestamp).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
-
-                // Create a summary of items
                 const itemSummary = Object.values(order.items)
                     .map(item => `${item.quantity}x ${getKitchenName(item.displayName)}`)
                     .join(', ');
@@ -276,7 +276,6 @@ function displayOrderHistory() {
             }
         });
         
-         // If after filtering no orders are shown, display a message
         if (historyOrdersContainer.innerHTML === '') {
              historyOrdersContainer.innerHTML = '<p>No completed or cancelled orders to show yet.</p>';
         }
@@ -374,12 +373,10 @@ document.body.addEventListener('click', e => {
 });
 
 // --- Other Event Listeners ---
-
-// MODIFIED: This now calls the function to load history before showing the modal
 if (historyBtn) {
     historyBtn.addEventListener('click', () => {
-        displayOrderHistory(); // Load the data first
-        historyModal.style.display = 'block'; // Then show the modal
+        displayOrderHistory(); 
+        historyModal.style.display = 'block';
     });
 }
 
