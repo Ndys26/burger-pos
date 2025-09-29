@@ -188,7 +188,11 @@ function isCoreVariantAvailable(variant) {
 }
 
 function displayMenu() {
-    database.ref().on('value', (snapshot) => {
+    // ==================================== FIX START ====================================
+    // Changed .on() to .once() to fetch menu data only one time.
+    // This stops one user's order from resetting the page for another user.
+    database.ref().once('value', (snapshot) => {
+    // ===================================== FIX END =====================================
         const data = snapshot.val();
         if (!data || !data.products) {
             menuContainer.innerHTML = "<p>Menu is not available.</p>";
