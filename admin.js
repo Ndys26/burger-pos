@@ -2,7 +2,8 @@
 const firebaseConfig = {
     apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ",
     authDomain: "counting-pos-food-system.firebaseapp.com",
-    databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebaseddatabase.app",
+    // --- FIX: Corrected the typo in the database URL ---
+    databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "counting-pos-food-system",
     storageBucket: "counting-pos-food-system.firebasestorage.app",
     messagingSenderId: "663603508723",

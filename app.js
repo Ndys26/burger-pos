@@ -507,7 +507,8 @@ submitOrderBtn.addEventListener('click', () => {
         orderStatus = 'pending'; // This will go directly into "Incoming Orders"
         pickupTimestamp = Date.now();
     } else {
-        orderStatus = 'pending_confirmation'; // This goes to the new "Scheduled" area for approval
+        // --- FIX: Changed 'pending_confirmation' to 'scheduled' to match admin.js ---
+        orderStatus = 'scheduled'; // This goes to the "Scheduled" area.
         
         // --- This code converts a time string like "8:45 PM" to a full timestamp ---
         const today = new Date();
@@ -549,7 +550,7 @@ submitOrderBtn.addEventListener('click', () => {
                 items: cart,
                 total: parseFloat(cartTotal.textContent),
                 timestamp: Date.now(), // The time the order was created
-                status: orderStatus, // Use the new dynamic status ('pending' or 'pending_confirmation')
+                status: orderStatus, // Use the new dynamic status ('pending' or 'scheduled')
                 remark: orderRemark,
                 orderNumber: newOrderNumber,
                 pickupTime: selectedPickupTime, // The human-friendly time string (e.g., "8:45 PM")
