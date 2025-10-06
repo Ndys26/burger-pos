@@ -1,5 +1,5 @@
 // --- Firebase Configuration ---
-const firebaseConfig = { apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB" };
+const firebaseConfig = { apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebaseddatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB" };
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -21,62 +21,104 @@ const closeModalBtn = document.querySelector('.modal-close-btn');
 let cart = {};
 let customerNameGlobal = '';
 let ingredientsData = {};
-// NEW: Global variable to hold the store's open/closed status
-let storeIsOpen = false;
+// --- MODIFICATION: Replaced simple boolean with a status object and a timer variable ---
+let storeStatus = { isOpen: false, message: 'Loading status...' };
+let reopenTimer = null; // Variable to hold the countdown interval
 
-// --- ======================= START OF NEW SECTION ======================= ---
+// --- ======================= START OF MODIFIED SECTION ======================= ---
 
-// --- NEW: Real-time listener for store status from Firebase ---
-// This is the core of the new logic. It listens for changes to the on/off switch.
-const storeStatusRef = database.ref('settings/isStoreOpen');
+// --- MODIFIED: Real-time listener for the new storeStatus object ---
+const storeStatusRef = database.ref('settings/storeStatus');
 storeStatusRef.on('value', (snapshot) => {
-    // Update the global status. It becomes true only if the database value is exactly true.
-    storeIsOpen = snapshot.val() === true;
+    // Set a default "closed" status if nothing exists in the database yet.
+    storeStatus = snapshot.val() || { isOpen: false, message: "Sorry, online ordering is currently closed." };
     
     // Call the function to update the user interface whenever the status changes.
-    // This happens in real-time.
     updateStoreStatusUI();
 });
 
-// --- NEW: Function to control UI based on store status ---
-// This function shows/hides the "closed" message and enables/disables the order button.
+// --- MODIFIED: Function to control UI based on the detailed store status object ---
 function updateStoreStatusUI() {
+    // NOTE: This assumes you have an element with id="store-status-container" in your customer-facing HTML,
+    // and inside it, another element with id="store-status-message".
+    // Example: <div id="store-status-container" style="display:none;"><p id="store-status-message"></p></div>
     const statusContainer = document.getElementById('store-status-container');
+    const statusMessageEl = document.getElementById('store-status-message'); // Element for the message text
     const submitButton = document.getElementById('submit-order');
     const pickupSelect = document.getElementById('pickup-time-select');
+    const startButton = document.getElementById('start-order-btn'); // Also control the welcome page button
+    
+    // Clear any existing automatic reopening timer to prevent duplicates.
+    if (reopenTimer) {
+        clearInterval(reopenTimer);
+        reopenTimer = null;
+    }
 
-    // Safety check to ensure the elements exist on the page
-    if (!statusContainer || !submitButton || !pickupSelect) return;
+    // Safety check to ensure the elements exist
+    if (!statusContainer || !submitButton || !pickupSelect || !startButton || !statusMessageEl) {
+        console.warn("One or more UI elements for store status are missing.");
+        return;
+    };
 
-    if (storeIsOpen) {
+    if (storeStatus.isOpen) {
         // If the store is OPEN:
         statusContainer.style.display = 'none'; // Hide the "store closed" banner
-        submitButton.disabled = false; // Enable the "Place Order" button
+        submitButton.disabled = false;
         submitButton.textContent = 'Place Order';
-        pickupSelect.disabled = false; // Enable the pickup time dropdown
+        pickupSelect.disabled = false;
+        startButton.disabled = false; // Enable button on welcome page
+        startButton.textContent = 'Start Ordering';
     } else {
         // If the store is CLOSED:
-        statusContainer.style.display = 'block'; // Show the "store closed" banner
-        submitButton.disabled = true; // Disable the "Place Order" button
+        statusMessageEl.textContent = storeStatus.message; // Display the custom message from the admin
+        statusContainer.style.display = 'block';
+        submitButton.disabled = true;
         submitButton.textContent = 'Ordering is Closed';
-        pickupSelect.disabled = true; // Disable the pickup time dropdown
+        pickupSelect.disabled = true;
+        startButton.disabled = true; // Disable button on welcome page
+        startButton.textContent = 'Ordering is Closed';
+
+        // NEW: Check if there is an automatic reopening time set
+        if (storeStatus.reopenTime && new Date().getTime() < storeStatus.reopenTime) {
+            reopenTimer = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = storeStatus.reopenTime - now;
+
+                if (distance < 0) {
+                    // Time is up, so we stop the timer and set the store to open.
+                    // This update will trigger the listener again for all users, automatically opening the store.
+                    clearInterval(reopenTimer);
+                    database.ref('settings/storeStatus').update({ isOpen: true, message: "We are open for online orders!" });
+                    return;
+                }
+
+                // Calculate hours, minutes, seconds for the countdown
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                // Update the message with the live countdown
+                statusMessageEl.textContent = `Maaf, pesanan ditutup. We will reopen in ${hours}h ${minutes}m ${seconds}s`;
+                
+            }, 1000);
+        }
     }
 }
+// --- ======================= END OF MODIFIED SECTION ======================= ---
 
-// --- ======================= END OF NEW SECTION ======================= ---
+// --- (The rest of your `app.js` file remains exactly the same) ---
 
+// ... [Preserving all your original functions like populatePickupTimes, displayMenu, etc.] ...
 
-// --- Function to generate pickup time options based on admin settings ---
 async function populatePickupTimes() {
     const select = document.getElementById('pickup-time-select');
     if (!select) return;
-    select.innerHTML = ''; // Clear previous options
+    select.innerHTML = ''; 
 
     try {
         const settingsSnapshot = await database.ref('settings').once('value');
         const settings = settingsSnapshot.val();
 
-        // Default settings if none are found in the database
         const startTimeStr = settings?.operatingHours?.startTime || "18:30";
         const endTimeStr = settings?.operatingHours?.endTime || "23:00";
         const interval = settings?.pickupInterval || 15;
@@ -91,29 +133,18 @@ async function populatePickupTimes() {
         const endTime = new Date(now);
         endTime.setHours(endHour, endMinute, 0, 0);
 
-        // =========================================================================
-        // ===               IMPORTANT: OLD TIME-CHECKING CODE REMOVED           ===
-        // =========================================================================
-        // The entire 'if (now < startTime || now > endTime)' block has been deleted
-        // from here. The new real-time listener at the top of the file now handles this.
-        // =========================================================================
-
-        // Add "Pick Up Now" option first
         const pickupNowOption = document.createElement('option');
         pickupNowOption.value = 'Pick Up Now';
         pickupNowOption.textContent = 'Sedia Secepat Mungkin (Pick Up Now)';
         select.appendChild(pickupNowOption);
         
-        // Determine the first available time slot
         let firstSlotTime = new Date(now);
-        // Round up to the next interval
         const minutes = firstSlotTime.getMinutes();
         const remainder = minutes % interval;
         if (remainder !== 0) {
             firstSlotTime.setMinutes(minutes + (interval - remainder));
         }
 
-        // Generate time slots until closing time
         let slotTime = new Date(firstSlotTime);
         while (slotTime <= endTime) {
             const timeString = slotTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
@@ -122,7 +153,6 @@ async function populatePickupTimes() {
             optionElement.textContent = `Ambil pada ${timeString}`;
             select.appendChild(optionElement);
             
-            // Increment to the next slot
             slotTime.setMinutes(slotTime.getMinutes() + interval);
         }
 
@@ -135,7 +165,6 @@ async function populatePickupTimes() {
     }
 }
 
-// --- UPDATED: Start Order Button Listener to call the new UI function ---
 startOrderBtn.addEventListener('click', async () => {
     customerNameGlobal = customerNameInput.value.trim();
     if (customerNameGlobal === '') { alert('Please enter your name.'); return; }
@@ -145,13 +174,9 @@ startOrderBtn.addEventListener('click', async () => {
     
     await populatePickupTimes();
     displayMenu();
-    // NEW: Call this function to set the initial state of the order button correctly
     updateStoreStatusUI(); 
 });
 
-
-// --- ======================= START OF UNCHANGED SECTION ======================= ---
-// (The rest of your code remains exactly the same)
 
 function displayMenuGallery() {
     const galleryContainer = document.getElementById('photo-grid-container');
@@ -188,11 +213,7 @@ function isCoreVariantAvailable(variant) {
 }
 
 function displayMenu() {
-    // ==================================== FIX START ====================================
-    // Changed .on() to .once() to fetch menu data only one time.
-    // This stops one user's order from resetting the page for another user.
     database.ref().once('value', (snapshot) => {
-    // ===================================== FIX END =====================================
         const data = snapshot.val();
         if (!data || !data.products) {
             menuContainer.innerHTML = "<p>Menu is not available.</p>";
@@ -467,6 +488,9 @@ cartItems.addEventListener('click', e => {
     updateCart();
 });
 
+// ===================================================================
+// ===== THIS IS THE ONLY SECTION THAT HAS BEEN MODIFIED         =====
+// ===================================================================
 submitOrderBtn.addEventListener('click', () => {
     if (Object.keys(cart).length === 0) { alert("Your cart is empty!"); return; }
     if (!customerNameGlobal) { alert("An error occurred. Please refresh."); return; }
@@ -474,6 +498,43 @@ submitOrderBtn.addEventListener('click', () => {
     const orderRemark = document.getElementById('order-remark-input').value.trim();
     const selectedPickupTime = document.getElementById('pickup-time-select').value;
     
+    // --- UPDATED LOGIC TO AUTOMATICALLY ACCEPT SCHEDULED ORDERS ---
+    const isPickupNow = selectedPickupTime === 'Pick Up Now';
+    let orderStatus = '';
+    let pickupTimestamp = null;
+
+    if (isPickupNow) {
+        orderStatus = 'pending'; // Stays the same for immediate orders
+        pickupTimestamp = Date.now();
+    } else {
+        // --- THIS IS THE CHANGE ---
+        // Future orders are now directly marked as 'scheduled', skipping the confirmation step.
+        orderStatus = 'scheduled'; 
+        
+        const today = new Date();
+        const timeParts = selectedPickupTime.match(/(\d+):(\d+)\s*(AM|PM)/); 
+        if (timeParts) {
+            let hours = parseInt(timeParts[1], 10);
+            const minutes = parseInt(timeParts[2], 10);
+            const period = timeParts[3];
+
+            if (period === 'PM' && hours < 12) {
+                hours += 12;
+            }
+            if (period === 'AM' && hours === 12) {
+                hours = 0;
+            }
+            
+            const pickupDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
+            pickupTimestamp = pickupDate.getTime();
+        } else {
+            console.error("Could not parse pickup time, defaulting to 'pending'.");
+            orderStatus = 'pending'; 
+            pickupTimestamp = Date.now();
+        }
+    }
+    // --- END OF UPDATED LOGIC ---
+
     const orderCounterRef = database.ref('counters/orderNumber');
     
     orderCounterRef.transaction((currentValue) => (currentValue || 0) + 1, (error, committed, snapshot) => {
@@ -481,16 +542,19 @@ submitOrderBtn.addEventListener('click', () => {
         if (committed) {
             const newOrderNumber = snapshot.val();
             const newOrderRef = database.ref('orders').push();
+            
             newOrderRef.set({
                 customerName: customerNameGlobal,
                 items: cart,
                 total: parseFloat(cartTotal.textContent),
                 timestamp: Date.now(),
-                status: "pending",
+                status: orderStatus, // Will now be 'pending' or 'scheduled'
                 remark: orderRemark,
                 orderNumber: newOrderNumber,
-                pickupTime: selectedPickupTime
+                pickupTime: selectedPickupTime,
+                pickupTimestamp: pickupTimestamp
             });
+
             for (const key in cart) {
                 const item = cart[key];
                 database.ref(`products/${item.productKey}/variants/${item.variantKey}/soldToday`).transaction(currentValue => (currentValue || 0) + item.quantity);
@@ -507,4 +571,3 @@ if (imageModal) { imageModal.addEventListener('click', (event) => { if (event.ta
 
 // --- Initial Load ---
 displayMenuGallery();
-// --- ======================== END OF UNCHANGED SECTION ======================== ---

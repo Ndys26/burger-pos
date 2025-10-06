@@ -32,6 +32,15 @@
                         <form id="start-order-form">
                             <!-- Your original input and button with their IDs are preserved -->
                             <input type="text" id="customer-name-input" class="name-input" placeholder="Enter your name here" autocomplete="name" required>
+                            
+                            <!-- =========== NOTIFICATION MOVED HERE START =========== -->
+                            <!-- This banner will now appear on the welcome screen when the store is closed. -->
+                            <!-- The app.js file will control its visibility and text content automatically. -->
+                            <div id="store-status-container" class="store-status-banner" style="display: none;">
+                                <p id="store-status-message">Maaf, pesanan online ditutup buat masa ini.</p>
+                            </div>
+                            <!-- ============ NOTIFICATION MOVED HERE END ============ -->
+                            
                             <button type="button" id="start-order-btn" class="start-btn">Start Ordering</button>
                         </form>
                     </div>
@@ -70,10 +79,8 @@
                 <h5>Pickup Time:</h5>
                 <select id="pickup-time-select" class="remark-input"></select>
             </div>
-
-            <div id="store-status-container" class="store-status-banner" style="display: none;">
-                <p id="store-status-message">Maaf, pesanan online ditutup buat masa ini.</p>
-            </div>
+            
+            <!-- The notification div was moved from here to the welcome section -->
 
             <button id="submit-order">Place Order</button>
         </div>

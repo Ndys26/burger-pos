@@ -7,6 +7,29 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Optional: Add some spacing for the new controls for better readability */
+        .settings-form-container .form-group {
+            margin-bottom: 20px;
+        }
+        .settings-form-container hr {
+            border: 0;
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 25px 0;
+        }
+        .settings-input, #reopen-time {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+        .green-btn {
+            background-color: #4CAF50 !important; /* Green for Open */
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -21,7 +44,7 @@
                 <a href="#" class="nav-link" data-view="inventory-view"><i class="fas fa-boxes-stacked"></i><span>Inventory</span></a>
                 <a href="#" class="nav-link" data-view="menu-view"><i class="fas fa-hamburger"></i><span>Menu</span></a>
                 <a href="#" class="nav-link" data-view="customers-view"><i class="fas fa-users"></i><span>Customers</span></a>
-                <a href="#" class="nav-link" data-view="settings-view"><i class="fas fa-cog"></i><span>Settings</span></a>
+                <a href="#" class="nav-link active" data-view="settings-view"><i class="fas fa-cog"></i><span>Settings</span></a>
                 <a href="#" id="logout-btn" class="nav-link" style="margin-top: auto;"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
             </nav>
         </aside>
@@ -29,7 +52,7 @@
         <!-- ===== MAIN CONTENT ===== -->
         <main class="main-content">
             <!-- VIEW 1: Dashboard -->
-            <section id="dashboard-view" class="main-view active">
+            <section id="dashboard-view" class="main-view">
                 <header class="main-header">
                     <h1>Dashboard</h1>
                     <div class="header-actions"><span>Current Week</span><button class="add-item-btn">+ Add Item</button></div>
@@ -131,11 +154,53 @@
             </section>
 
             <!-- VIEW 7: Settings -->
-            <section id="settings-view" class="main-view">
+            <section id="settings-view" class="main-view active">
                 <header class="main-header"><h1>Settings</h1></header>
                 <div class="data-card">
                     <header class="data-card-header"><h3>Store Controls</h3></header>
-                    <div class="settings-form-container"><div class="form-group store-status-control"><div class="store-status-text-group"><label>Online Ordering Status</label><p class="description">Use this switch to instantly open or close your shop for new orders.</p></div><div class="store-status-toggle-group"><label class="switch"><input type="checkbox" id="store-status-toggle"><span class="slider round"></span></label><span id="store-status-text" class="store-status-label">LOADING...</span></div></div></div>
+                    <div class="settings-form-container">
+                        
+                        <!-- =========== NEW STORE CONTROLS START =========== -->
+                        <!-- This section replaces the old toggle switch -->
+
+                        <!-- 1. Current Status Display -->
+                        <div class="form-group">
+                            <label>Current Online Ordering Status</label>
+                            <p class="description">This is the live status that your customers see.</p>
+                            <strong id="current-status-text" class="store-status-label" style="font-size: 1.2em; padding-top: 5px; display: inline-block;">LOADING...</strong>
+                        </div>
+
+                        <hr>
+
+                        <!-- 2. Close with automatic reopening time -->
+                        <div class="form-group">
+                            <label for="reopen-time">Option 1: Close and set automatic reopening time</label>
+                            <p class="description">Choose this if you have a fixed reopening time. The store will automatically open for orders at the selected date and time.</p>
+                            <input type="datetime-local" id="reopen-time" class="settings-input">
+                            <button type="button" id="set-reopen-btn" class="add-item-btn" style="margin-top: 10px;">Close With Timer</button>
+                        </div>
+
+                        <hr>
+
+                        <!-- 3. Close for prayer/short break -->
+                        <div class="form-group">
+                            <label for="close-for-break-btn">Option 2: Close for a short break (e.g., prayer)</label>
+                            <p class="description">This displays a "will open later" message. You must manually reopen the store using Option 4 when you are ready.</p>
+                            <button type="button" id="close-for-break-btn" class="add-item-btn">Close Temporarily</button>
+                        </div>
+
+                        <hr>
+
+                        <!-- 4. Manually Open Store -->
+                        <div class="form-group">
+                            <label for="open-store-btn">Option 3: Manually Open Store</label>
+                            <p class="description">Use this to immediately open the store for online orders. This will override any timed closures.</p>
+                            <button type="button" id="open-store-btn" class="add-item-btn green-btn">Open Store Now</button>
+                        </div>
+                        
+                        <!-- ============ NEW STORE CONTROLS END ============ -->
+
+                    </div>
                 </div>
                 <div class="data-card">
                     <header class="data-card-header"><h3>Business Settings</h3></header>

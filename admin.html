@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
+    <!-- We can keep Font Awesome in case you want to use icons elsewhere -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -25,7 +27,6 @@
                 <h2>Today's Best Seller</h2>
                 <p id="best-seller">N/A</p>
             </div>
-            <!-- === MOVED HERE === -->
             <div class="summary-card">
                 <h2>Sales Target</h2>
                 <p id="sales-target-display">RM 0.00</p>
@@ -36,31 +37,50 @@
         </div>
         <hr>
 
-        <!-- === UPDATED 3-COLUMN KITCHEN WORKFLOW === -->
         <main class="admin-main">
+
+            <!-- === 'SCHEDULED' HEADER IS NOW IDENTICAL TO THE OTHERS === -->
             <section class="order-column">
-                <h2><span id="incoming-count">0</span> Incoming Orders</h2>
+                <!-- This h2 is now a simple, non-clickable header -->
+                <h2>
+                    <span id="scheduled-count" class="order-count-badge">0</span>
+                    Scheduled for Later
+                </h2>
+                <div id="scheduled-orders" class="order-list">
+                    <!-- Orders will appear here -->
+                </div>
+            </section>
+            
+            <section class="order-column">
+                <h2>
+                    <span id="incoming-count" class="order-count-badge">0</span>
+                    Incoming Orders
+                </h2>
                 <div id="pending-orders" class="order-list">
-                    <!-- PENDING ORDERS WILL BE POPULATED HERE BY JS -->
+                    <!-- Orders will appear here -->
                 </div>
             </section>
 
-            <!-- === NEW 'NOW PREPARING' COLUMN ADDED === -->
             <section class="order-column">
-                <h2><span id="preparing-count">0</span> Now Preparing</h2>
+                <h2>
+                    <span id="preparing-count" class="order-count-badge">0</span>
+                    Now Preparing
+                </h2>
                 <div id="preparing-orders" class="order-list">
-                    <!-- PREPARING ORDERS WILL BE POPULATED HERE BY JS -->
+                    <!-- Orders will appear here -->
                 </div>
             </section>
 
             <section class="order-column">
-                <h2><span id="ready-count">0</span> Ready for Pickup</h2>
+                <h2>
+                    <span id="ready-count" class="order-count-badge">0</span>
+                    Ready for Pickup
+                </h2>
                 <div id="ready-orders" class="order-list">
-                    <!-- READY ORDERS WILL BE POPULATED HERE BY JS -->
+                    <!-- Orders will appear here -->
                 </div>
             </section>
         </main>
-        <!-- === LAYOUT END === -->
 
         <hr>
         
