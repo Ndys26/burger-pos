@@ -430,14 +430,33 @@ menuContainer.addEventListener('click', (e) => {
                 }
             }
             if (!variantFound) return;
+            
             let finalPrice = variantFound.price;
             let customizations = [];
+
+            // ***** START OF THE ONLY CODE CHANGE *****
+
+            // 1. Get ONLY the customizations from checkboxes that the user clicks.
             card.querySelectorAll('.option-checkbox:checked, .customization-checkbox:checked').forEach(box => {
                 if (box.dataset.price) finalPrice += parseFloat(box.dataset.price);
                 customizations.push(box.dataset.name);
             });
-            const displayName = [productName, selectedStyle, selectedType].filter(Boolean).join(' ');
+
+            // 2. Create a shorter, cleaner name for the kitchen.
+            let kitchenName = productName;
+            // Specific rule for "Maggi Burger" as requested.
+            if (productKey === 'maggiDagingBurger') {
+                kitchenName = 'Maggi Burger';
+            }
+            // Combine the clean name with the meat type (e.g., "Ayam").
+            const displayName = [kitchenName, selectedType].filter(Boolean).join(' ');
+            
+            // The cartKey MUST still be unique. It uses the variantKey which includes the style ("Biasa"),
+            // so everything still works correctly in the background.
             const cartKey = `${productKey}_${variantKey}_${customizations.sort().join('')}`;
+            
+            // ***** END OF THE ONLY CODE CHANGE *****
+
             if (cart[cartKey]) { cart[cartKey].quantity++; } 
             else { cart[cartKey] = { productKey, variantKey, displayName, price: finalPrice, quantity: 1, customizations }; }
             updateCart();
