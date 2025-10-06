@@ -1,5 +1,5 @@
 // --- Firebase Configuration ---
-const firebaseConfig = { apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebaseddatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB" };
+const firebaseConfig = { apiKey: "AIzaSyBAZ7eWGKsLCAWbxLpytJ-a9xw5ehBYOOQ", authDomain: "counting-pos-food-system.firebaseapp.com", databaseURL: "https://counting-pos-food-system-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "counting-pos-food-system", storageBucket: "counting-pos-food-system.firebasestorage.app", messagingSenderId: "663603508723", appId: "1:663603508723:web:14699d4ccf31faaee5ce86", measurementId: "G-LYPFSMCMXB" };
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
@@ -489,7 +489,7 @@ cartItems.addEventListener('click', e => {
 });
 
 // ===================================================================
-// ===== THIS IS THE ONLY SECTION THAT HAS BEEN MODIFIED         =====
+// ===== THIS ENTIRE FUNCTION HAS BEEN UPDATED FOR STEP 1        =====
 // ===================================================================
 submitOrderBtn.addEventListener('click', () => {
     if (Object.keys(cart).length === 0) { alert("Your cart is empty!"); return; }
@@ -498,19 +498,18 @@ submitOrderBtn.addEventListener('click', () => {
     const orderRemark = document.getElementById('order-remark-input').value.trim();
     const selectedPickupTime = document.getElementById('pickup-time-select').value;
     
-    // --- UPDATED LOGIC TO AUTOMATICALLY ACCEPT SCHEDULED ORDERS ---
+    // --- NEW LOGIC TO DETERMINE STATUS AND TIMESTAMP ---
     const isPickupNow = selectedPickupTime === 'Pick Up Now';
     let orderStatus = '';
     let pickupTimestamp = null;
 
     if (isPickupNow) {
-        orderStatus = 'pending'; // Stays the same for immediate orders
+        orderStatus = 'pending'; // This will go directly into "Incoming Orders"
         pickupTimestamp = Date.now();
     } else {
-        // --- THIS IS THE CHANGE ---
-        // Future orders are now directly marked as 'scheduled', skipping the confirmation step.
-        orderStatus = 'scheduled'; 
+        orderStatus = 'pending_confirmation'; // This goes to the new "Scheduled" area for approval
         
+        // --- This code converts a time string like "8:45 PM" to a full timestamp ---
         const today = new Date();
         const timeParts = selectedPickupTime.match(/(\d+):(\d+)\s*(AM|PM)/); 
         if (timeParts) {
@@ -519,21 +518,22 @@ submitOrderBtn.addEventListener('click', () => {
             const period = timeParts[3];
 
             if (period === 'PM' && hours < 12) {
-                hours += 12;
+                hours += 12; // Convert 1-11 PM to 13-23
             }
             if (period === 'AM' && hours === 12) {
-                hours = 0;
+                hours = 0; // Convert 12 AM (midnight) to 0
             }
             
             const pickupDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes);
             pickupTimestamp = pickupDate.getTime();
         } else {
+            // Fallback: If for some reason the time format is unexpected, treat it as a "now" order.
             console.error("Could not parse pickup time, defaulting to 'pending'.");
             orderStatus = 'pending'; 
             pickupTimestamp = Date.now();
         }
     }
-    // --- END OF UPDATED LOGIC ---
+    // --- END OF NEW LOGIC ---
 
     const orderCounterRef = database.ref('counters/orderNumber');
     
@@ -543,17 +543,19 @@ submitOrderBtn.addEventListener('click', () => {
             const newOrderNumber = snapshot.val();
             const newOrderRef = database.ref('orders').push();
             
+            // --- UPDATED DATA THAT GETS SAVED TO FIREBASE ---
             newOrderRef.set({
                 customerName: customerNameGlobal,
                 items: cart,
                 total: parseFloat(cartTotal.textContent),
-                timestamp: Date.now(),
-                status: orderStatus, // Will now be 'pending' or 'scheduled'
+                timestamp: Date.now(), // The time the order was created
+                status: orderStatus, // Use the new dynamic status ('pending' or 'pending_confirmation')
                 remark: orderRemark,
                 orderNumber: newOrderNumber,
-                pickupTime: selectedPickupTime,
-                pickupTimestamp: pickupTimestamp
+                pickupTime: selectedPickupTime, // The human-friendly time string (e.g., "8:45 PM")
+                pickupTimestamp: pickupTimestamp // The new machine-readable timestamp for calculations
             });
+            // --- END OF UPDATED DATA ---
 
             for (const key in cart) {
                 const item = cart[key];
