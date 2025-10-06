@@ -433,29 +433,28 @@ menuContainer.addEventListener('click', (e) => {
             
             let finalPrice = variantFound.price;
             let customizations = [];
-
-            // ***** START OF THE ONLY CODE CHANGE *****
-
-            // 1. Get ONLY the customizations from checkboxes that the user clicks.
             card.querySelectorAll('.option-checkbox:checked, .customization-checkbox:checked').forEach(box => {
                 if (box.dataset.price) finalPrice += parseFloat(box.dataset.price);
                 customizations.push(box.dataset.name);
             });
 
-            // 2. Create a shorter, cleaner name for the kitchen.
-            let kitchenName = productName;
-            // Specific rule for "Maggi Burger" as requested.
-            if (productKey === 'maggiDagingBurger') {
-                kitchenName = 'Maggi Burger';
-            }
-            // Combine the clean name with the meat type (e.g., "Ayam").
-            const displayName = [kitchenName, selectedType].filter(Boolean).join(' ');
+            // ***** START: THIS IS THE ONLY PART THAT HAS BEEN CHANGED *****
             
-            // The cartKey MUST still be unique. It uses the variantKey which includes the style ("Biasa"),
-            // so everything still works correctly in the background.
+            // 1. Clean the base product name by removing the specific words you don't want.
+            let cleanProductName = productName
+                .replace(/Ramly/gi, '')  // Removes "Ramly" (case-insensitive)
+                .replace(/Patty/gi, '')  // Removes "Patty" (case-insensitive)
+                .replace(/  +/g, ' ')   // Cleans up any extra spaces
+                .trim();                // Removes space from start or end
+
+            // 2. Build the final name for the KDS, keeping the style (e.g., "Special").
+            // Example: "Burger" + "Daging" + "Special" becomes "Burger Daging Special"
+            const displayName = [cleanProductName, selectedType, selectedStyle].filter(Boolean).join(' ');
+            
+            // The cartKey remains the same to ensure the system works correctly.
             const cartKey = `${productKey}_${variantKey}_${customizations.sort().join('')}`;
-            
-            // ***** END OF THE ONLY CODE CHANGE *****
+
+            // ***** END: THIS IS THE ONLY PART THAT HAS BEEN CHANGED *****
 
             if (cart[cartKey]) { cart[cartKey].quantity++; } 
             else { cart[cartKey] = { productKey, variantKey, displayName, price: finalPrice, quantity: 1, customizations }; }
