@@ -438,23 +438,38 @@ menuContainer.addEventListener('click', (e) => {
                 customizations.push(box.dataset.name);
             });
 
-            // ***** START: THIS IS THE ONLY PART THAT HAS BEEN CHANGED *****
+            // ==================== START: FINAL AND CORRECT KDS NAMING LOGIC ====================
             
-            // 1. Clean the base product name by removing the specific words you don't want.
-            let cleanProductName = productName
-                .replace(/Ramly/gi, '')  // Removes "Ramly" (case-insensitive)
-                .replace(/Patty/gi, '')  // Removes "Patty" (case-insensitive)
-                .replace(/  +/g, ' ')   // Cleans up any extra spaces
-                .trim();                // Removes space from start or end
+            // This function creates the clean display name for every item.
+            function getKitchenDisplayName(pKey, pName, type, style) {
+                let baseName;
 
-            // 2. Build the final name for the KDS, keeping the style (e.g., "Special").
-            // Example: "Burger" + "Daging" + "Special" becomes "Burger Daging Special"
-            const displayName = [cleanProductName, selectedType, selectedStyle].filter(Boolean).join(' ');
+                // Step 1: Set the base name with specific rules for items that need shortening.
+                if (pKey === 'burgerRamly') {
+                    baseName = 'Burger';
+                } else if (pKey === 'maggiDagingBurger') { // Handles the long "Maggi Burger Patty"
+                    baseName = 'Maggi'; 
+                } else if (pName.toLowerCase().includes('maggi patty')) { // Handles "Maggi Patty Daging"
+                    baseName = 'Maggi';
+                } else if (pName.toLowerCase().includes('patty sahaja')) { // Handles "Patty Sahaja Ayam"
+                    baseName = 'Patty';
+                } else {
+                    baseName = pName; // For all other items like Benjo and Oblong, use their name.
+                }
+                
+                // Step 2: Decide if the style should be displayed. "Biasa" is always hidden.
+                const displayStyle = (style && style.toLowerCase() !== 'biasa') ? style : null;
+                
+                // Step 3: Build the final name by combining the parts that exist.
+                const finalNameParts = [baseName, type, displayStyle];
+                return finalNameParts.filter(Boolean).join(' ');
+            }
+
+            const displayName = getKitchenDisplayName(productKey, productName, selectedType, selectedStyle);
             
-            // The cartKey remains the same to ensure the system works correctly.
             const cartKey = `${productKey}_${variantKey}_${customizations.sort().join('')}`;
 
-            // ***** END: THIS IS THE ONLY PART THAT HAS BEEN CHANGED *****
+            // ==================== END: FINAL AND CORRECT KDS NAMING LOGIC ====================
 
             if (cart[cartKey]) { cart[cartKey].quantity++; } 
             else { cart[cartKey] = { productKey, variantKey, displayName, price: finalPrice, quantity: 1, customizations }; }
